@@ -13,7 +13,7 @@ module.exports = {
         dim: '#4A5A7A',
       },
       fontFamily: {
-        sans: ['Outfit', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         card: '16px',
