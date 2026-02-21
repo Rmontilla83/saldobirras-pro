@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { getAuthUser, unauthorized, badRequest, ok } from '@/lib/api-auth';
+import { sendRechargeEmail, sendLowBalanceEmail, sendZeroBalanceEmail } from '@/lib/email';
+import { isLowBalance } from '@/lib/utils';
 
 // GET /api/transactions — list transactions
 export async function GET(req: NextRequest) {
@@ -24,7 +26,6 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query;
   if (error) return badRequest(error.message);
 
-  // Flatten customer name
   const transactions = data?.map((t: any) => ({
     ...t,
     customer_name: t.customers?.name,
@@ -61,6 +62,22 @@ export async function POST(req: NextRequest) {
     if (error) return badRequest(error.message);
     const result = data as any;
     if (result?.error) return badRequest(result.error);
+
+    // Send recharge email (async, don't block response)
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('id', customer_id)
+      .single();
+
+    if (customer?.email) {
+      sendRechargeEmail(
+        customer.email, customer.name, amount,
+        result.new_balance, customer.balance_type,
+        customer.qr_code, bank, reference
+      ).catch(console.error);
+    }
+
     return ok(result);
   }
 
@@ -75,6 +92,23 @@ export async function POST(req: NextRequest) {
     if (error) return badRequest(error.message);
     const result = data as any;
     if (result?.error) return badRequest(result.error);
+
+    // Check balance and send alerts (async)
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('id', customer_id)
+      .single();
+
+    if (customer?.email) {
+      const newBalance = result.new_balance;
+      if (newBalance <= 0) {
+        sendZeroBalanceEmail(customer.email, customer.name, customer.balance_type).catch(console.error);
+      } else if (isLowBalance(newBalance, customer.balance_type)) {
+        sendLowBalanceEmail(customer.email, customer.name, newBalance, customer.balance_type).catch(console.error);
+      }
+    }
+
     return ok(result);
   }
 

@@ -11,9 +11,10 @@ interface Props {
   onRecharge: (data: any) => Promise<any>;
   onConsume: (data: any) => Promise<any>;
   onLoadTransactions: (customerId: string) => Promise<Transaction[]>;
+  onSendQREmail: (customerId: string) => Promise<any>;
 }
 
-export default function CustomerView({ onRecharge, onConsume, onLoadTransactions }: Props) {
+export default function CustomerView({ onRecharge, onConsume, onLoadTransactions, onSendQREmail }: Props) {
   const { selectedCustomer: c, setView } = useStore();
   const [consumeAmt, setConsumeAmt] = useState('');
   const [consumeNote, setConsumeNote] = useState('');
@@ -132,6 +133,11 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
             <h3 className="text-[13px] font-extrabold tracking-[2.5px] uppercase text-amber mb-4">Código QR</h3>
             <div className="inline-block p-4 bg-white rounded-card shadow-[0_8px_32px_rgba(0,0,0,0.3)]" ref={qrRef} />
             <div className="text-[11px] text-dim mt-2.5 break-all">ID: {c.qr_code}</div>
+            {c.email && (
+              <button onClick={() => onSendQREmail(c.id)} className="btn-outline mt-3 text-[10px] px-3 py-2">
+                📧 Enviar QR por Correo
+              </button>
+            )}
           </div>
 
           <div className="card flex-1 overflow-y-auto max-h-[300px]">

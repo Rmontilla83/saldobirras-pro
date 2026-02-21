@@ -187,6 +187,13 @@ export default function DashboardPage() {
     return null;
   };
 
+  const sendQREmail = async (customerId: string) => {
+    const res = await apiCall('/api/email', 'POST', { customer_id: customerId });
+    if (res?.success) showToast('✓ Correo enviado');
+    else showToast(res?.error || 'Error al enviar correo', 'error');
+    return res;
+  };
+
   const loadTransactions = async (customerId?: string) => {
     const url = customerId
       ? `/api/transactions?customer_id=${customerId}`
@@ -225,6 +232,7 @@ export default function DashboardPage() {
             onRecharge={(data) => processTransaction('recharge', data)}
             onConsume={(data) => processTransaction('consume', data)}
             onLoadTransactions={loadTransactions}
+            onSendQREmail={sendQREmail}
           />
         )}
         {store.view === 'transactions' && (
