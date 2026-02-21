@@ -1,13 +1,18 @@
 'use client';
 
 import { useStore } from '@/lib/store';
-import { LayoutDashboard, UserPlus, ArrowLeftRight, BarChart3, Settings, RefreshCw, ScanLine, Users, Smartphone, Monitor } from 'lucide-react';
+import { LayoutDashboard, UserPlus, ArrowLeftRight, BarChart3, RefreshCw, ScanLine, Users, Smartphone, Monitor, ShieldCheck } from 'lucide-react';
 
 interface HeaderProps { onRefresh: () => void; }
 
 export default function Header({ onRefresh }: HeaderProps) {
-  const { view, setView, synced } = useStore();
+  const { view, setView, synced, user } = useStore();
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 700;
+  const isOwner = user?.role === 'owner';
+  const perms = user?.permissions || {} as any;
+
+  // Check if user has permission for a view
+  const can = (perm: string) => isOwner || perms[perm];
 
   return (
     <div className="flex items-center justify-between flex-wrap gap-3 py-5 mb-4">
@@ -22,6 +27,9 @@ export default function Header({ onRefresh }: HeaderProps) {
             <span className="text-[10px] tracking-[2px] uppercase text-slate-500 font-medium">
               {synced ? 'Sincronizado' : 'Offline'}
             </span>
+            {user && (
+              <span className="text-[10px] text-slate-600 ml-1">· {user.name}</span>
+            )}
           </div>
         </div>
       </div>
@@ -32,19 +40,20 @@ export default function Header({ onRefresh }: HeaderProps) {
           {isMobile ? 'Móvil' : 'Panel'}
         </div>
 
-        <nav className="flex gap-0.5">
+        <nav className="flex gap-0.5 flex-wrap">
           {isMobile ? (
             <>
               <NavBtn icon={<ScanLine size={14}/>} active={view==='scan'} onClick={()=>setView('scan')}>Escanear</NavBtn>
-              <NavBtn icon={<Users size={14}/>} active={view==='dashboard'} onClick={()=>setView('dashboard')}>Clientes</NavBtn>
-              <NavBtn icon={<UserPlus size={14}/>} active={view==='register'} onClick={()=>setView('register')}>Nuevo</NavBtn>
+              {can('dashboard') && <NavBtn icon={<Users size={14}/>} active={view==='dashboard'} onClick={()=>setView('dashboard')}>Clientes</NavBtn>}
+              {can('register') && <NavBtn icon={<UserPlus size={14}/>} active={view==='register'} onClick={()=>setView('register')}>Nuevo</NavBtn>}
             </>
           ) : (
             <>
-              <NavBtn icon={<LayoutDashboard size={14}/>} active={view==='dashboard'} onClick={()=>setView('dashboard')}>Panel</NavBtn>
-              <NavBtn icon={<UserPlus size={14}/>} active={view==='register'} onClick={()=>setView('register')}>Registrar</NavBtn>
-              <NavBtn icon={<ArrowLeftRight size={14}/>} active={view==='transactions'} onClick={()=>setView('transactions')}>Movimientos</NavBtn>
-              <NavBtn icon={<BarChart3 size={14}/>} active={view==='stats'} onClick={()=>setView('stats')}>Informes</NavBtn>
+              {can('dashboard') && <NavBtn icon={<LayoutDashboard size={14}/>} active={view==='dashboard'} onClick={()=>setView('dashboard')}>Panel</NavBtn>}
+              {can('register') && <NavBtn icon={<UserPlus size={14}/>} active={view==='register'} onClick={()=>setView('register')}>Registrar</NavBtn>}
+              {can('transactions') && <NavBtn icon={<ArrowLeftRight size={14}/>} active={view==='transactions'} onClick={()=>setView('transactions')}>Movimientos</NavBtn>}
+              {can('stats') && <NavBtn icon={<BarChart3 size={14}/>} active={view==='stats'} onClick={()=>setView('stats')}>Informes</NavBtn>}
+              {isOwner && <NavBtn icon={<ShieldCheck size={14}/>} active={view==='users'} onClick={()=>setView('users')}>Usuarios</NavBtn>}
               <NavBtn icon={<RefreshCw size={14}/>} active={false} onClick={onRefresh}></NavBtn>
             </>
           )}

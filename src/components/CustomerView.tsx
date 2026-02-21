@@ -18,7 +18,7 @@ interface Props {
 }
 
 export default function CustomerView({ onRecharge, onConsume, onLoadTransactions, onSendQREmail, onEditCustomer }: Props) {
-  const { selectedCustomer: c, setView } = useStore();
+  const { selectedCustomer: c, setView, user } = useStore();
   const [consumeAmt, setConsumeAmt] = useState('');
   const [consumeNote, setConsumeNote] = useState('');
   const [rechargeAmt, setRechargeAmt] = useState('');
@@ -27,6 +27,9 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showEdit, setShowEdit] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
+
+  const isOwner = user?.role === 'owner';
+  const can = (perm: string) => isOwner || (user?.permissions as any)?.[perm];
 
   if (!c) return null;
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 700;
@@ -80,9 +83,11 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-bold text-white/95 truncate">{c.name}</h2>
+                  {can('edit_customer') && (
                   <button onClick={() => setShowEdit(true)} className="w-7 h-7 rounded-lg bg-white/[0.03] hover:bg-amber/10 flex items-center justify-center transition-colors group">
                     <Pencil size={12} className="text-slate-500 group-hover:text-amber transition-colors"/>
                   </button>
+                  )}
                 </div>
                 <div className="text-[12px] text-slate-500 mt-0.5">{c.email}</div>
                 {c.phone && <div className="text-[12px] text-slate-500">{c.phone}</div>}
@@ -104,8 +109,9 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Actions — only show cards the user has permission for */}
+          <div className={`grid gap-3 ${can('consume') && can('recharge') ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {can('consume') && (
             <div className="card">
               <div className="flex items-center gap-2 mb-3">
                 <div className="icon-box" style={{background:'rgba(239,68,68,0.06)'}}><Minus size={15} className="text-red-400"/></div>
@@ -115,6 +121,8 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
               <input type="text" className="input text-sm mt-1.5" value={consumeNote} onChange={e => setConsumeNote(e.target.value)} placeholder="IPA, Stout, Lager..." />
               <button onClick={handleConsume} className="btn-red w-full mt-2.5 py-2.5 text-[10px]">Descontar</button>
             </div>
+            )}
+            {can('recharge') && (
             <div className="card">
               <div className="flex items-center gap-2 mb-3">
                 <div className="icon-box" style={{background:'rgba(16,185,129,0.06)'}}><Plus size={15} className="text-emerald-400"/></div>
@@ -128,6 +136,12 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
               <input type="text" className="input text-sm mt-1.5" value={rechargeRef} onChange={e => setRechargeRef(e.target.value)} placeholder="Referencia" />
               <button onClick={handleRecharge} className="btn-green w-full mt-2.5 py-2.5 text-[10px]">Recargar</button>
             </div>
+            )}
+            {!can('consume') && !can('recharge') && (
+              <div className="card text-center py-8">
+                <div className="text-slate-600 text-sm">No tienes permisos para operar saldos</div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -140,7 +154,7 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
             </div>
             <div className="inline-block p-3 bg-white rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.25)]" ref={qrRef} />
             <div className="text-[10px] text-slate-600 mt-2.5 font-mono">{c.qr_code}</div>
-            {c.email && (
+            {c.email && can('send_email') && (
               <button onClick={() => onSendQREmail(c.id)} className="btn-outline mt-3 text-[10px] px-3 py-2 flex items-center gap-1.5 mx-auto">
                 <Mail size={12}/> Enviar por Correo
               </button>

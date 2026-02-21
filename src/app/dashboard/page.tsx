@@ -13,6 +13,7 @@ import TransactionsView from '@/components/TransactionsView';
 import StatsView from '@/components/StatsView';
 import ScanView from '@/components/ScanView';
 import ScanPopup from '@/components/ScanPopup';
+import UsersView from '@/components/UsersView';
 import Toast from '@/components/Toast';
 
 export default function DashboardPage() {
@@ -40,6 +41,13 @@ export default function DashboardPage() {
         .single();
 
       if (!profile) { router.replace('/login'); return; }
+
+      // Check if user is deactivated
+      if (profile.is_active === false) {
+        await supabase.auth.signOut();
+        router.replace('/login');
+        return;
+      }
 
       // Get business
       const { data: business } = await supabase
@@ -288,6 +296,9 @@ export default function DashboardPage() {
         )}
         {store.view === 'scan' && (
           <ScanView onScan={scanQR} onSearch={searchCustomer} />
+        )}
+        {store.view === 'users' && store.user?.role === 'owner' && (
+          <UsersView showToast={showToast} />
         )}
       </div>
 

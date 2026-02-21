@@ -47,6 +47,13 @@ export async function POST(req: NextRequest) {
     return badRequest('customer_id, type y amount son requeridos');
   }
 
+  // Permission check (owner bypasses)
+  if (user.role !== 'owner') {
+    const perms = (user as any).permissions || {};
+    if (type === 'recharge' && !perms.recharge) return badRequest('No tienes permiso para recargar');
+    if (type === 'consume' && !perms.consume) return badRequest('No tienes permiso para descontar');
+  }
+
   const supabase = createAdminClient();
 
   if (type === 'recharge') {

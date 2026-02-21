@@ -11,12 +11,27 @@ export interface Business {
   created_at: string;
 }
 
+export interface UserPermissions {
+  dashboard: boolean;
+  register: boolean;
+  recharge: boolean;
+  consume: boolean;
+  transactions: boolean;
+  stats: boolean;
+  export: boolean;
+  edit_customer: boolean;
+  send_email: boolean;
+  manage_users: boolean;
+}
+
 export interface User {
   id: string;
   business_id: string;
   name: string;
   email: string;
   role: UserRole;
+  permissions: UserPermissions;
+  is_active: boolean;
   created_at: string;
 }
 
