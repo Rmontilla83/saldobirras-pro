@@ -218,6 +218,26 @@ export default function DashboardPage() {
     return res;
   };
 
+  const editCustomer = async (formData: FormData) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+    const res = await fetch('/api/customers/update', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+      body: formData,
+    });
+    const json = await res.json();
+    if (json?.success) {
+      await loadCustomers();
+      const updated = useStore.getState().customers.find(c => c.id === json.data.id);
+      if (updated) store.setView('customer', updated);
+      showToast('✓ Cliente actualizado');
+    } else {
+      showToast(json?.error || 'Error al actualizar', 'error');
+    }
+    return json;
+  };
+
   const loadTransactions = async (customerId?: string) => {
     const url = customerId
       ? `/api/transactions?customer_id=${customerId}`
@@ -257,6 +277,7 @@ export default function DashboardPage() {
             onConsume={(data) => processTransaction('consume', data)}
             onLoadTransactions={loadTransactions}
             onSendQREmail={sendQREmail}
+            onEditCustomer={editCustomer}
           />
         )}
         {store.view === 'transactions' && (

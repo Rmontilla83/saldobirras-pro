@@ -5,6 +5,7 @@ import { useStore } from '@/lib/store';
 import { formatBalance, formatMoney, formatDate, isLowBalance, BANKS } from '@/lib/utils';
 import Avatar from './Avatar';
 import StatusBadge from './StatusBadge';
+import EditCustomerModal from './EditCustomerModal';
 import type { Transaction } from '@/lib/types';
 
 interface Props {
@@ -12,9 +13,10 @@ interface Props {
   onConsume: (data: any) => Promise<any>;
   onLoadTransactions: (customerId: string) => Promise<Transaction[]>;
   onSendQREmail: (customerId: string) => Promise<any>;
+  onEditCustomer: (formData: FormData) => Promise<any>;
 }
 
-export default function CustomerView({ onRecharge, onConsume, onLoadTransactions, onSendQREmail }: Props) {
+export default function CustomerView({ onRecharge, onConsume, onLoadTransactions, onSendQREmail, onEditCustomer }: Props) {
   const { selectedCustomer: c, setView } = useStore();
   const [consumeAmt, setConsumeAmt] = useState('');
   const [consumeNote, setConsumeNote] = useState('');
@@ -22,6 +24,7 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
   const [rechargeBank, setRechargeBank] = useState('');
   const [rechargeRef, setRechargeRef] = useState('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [showEdit, setShowEdit] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
 
   if (!c) return null;
@@ -81,8 +84,11 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
         <div className="card">
           <div className="flex items-center gap-4 mb-5">
             <Avatar name={c.name} photoUrl={c.photo_url} large />
-            <div>
-              <div className="text-[22px] font-extrabold text-amber tracking-wide">{c.name}</div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <div className="text-[22px] font-extrabold text-amber tracking-wide">{c.name}</div>
+                <button onClick={() => setShowEdit(true)} className="text-muted hover:text-amber text-sm transition-colors" title="Editar cliente">✏️</button>
+              </div>
               <div className="text-sm text-muted mt-1">{c.email}</div>
               {c.phone && <div className="text-sm text-muted">{c.phone}</div>}
               <div className="text-[11px] text-dim mt-1">{formatDate(c.created_at)}</div>
@@ -162,6 +168,17 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
           </div>
         </div>
       </div>
+
+      {showEdit && (
+        <EditCustomerModal
+          customer={c}
+          onSave={async (formData) => {
+            await onEditCustomer(formData);
+            setShowEdit(false);
+          }}
+          onClose={() => setShowEdit(false)}
+        />
+      )}
     </div>
   );
 }
