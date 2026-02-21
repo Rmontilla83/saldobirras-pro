@@ -1,0 +1,22 @@
+{
+  "name": "SaldoBirras",
+  "short_name": "SaldoBirras",
+  "description": "Sistema de gestión de saldos para cervecería",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#080D19",
+  "theme_color": "#080D19",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

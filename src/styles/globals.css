@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-bg text-white font-sans;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { @apply bg-amber/10 rounded; }
+
+/* Custom utilities */
+@layer components {
+  .card {
+    @apply bg-bg-3/75 border border-amber/[0.08] rounded-card p-6 backdrop-blur-xl;
+  }
+  .btn-primary {
+    @apply px-5 py-3 rounded-xl bg-gradient-to-br from-amber to-amber-dark text-bg
+      font-bold text-xs uppercase tracking-wider transition-all
+      hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0;
+  }
+  .btn-green {
+    @apply px-5 py-3 rounded-xl bg-gradient-to-br from-gn to-gn-dark text-white
+      font-bold text-xs uppercase tracking-wider transition-all
+      hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0;
+  }
+  .btn-red {
+    @apply px-5 py-3 rounded-xl bg-gradient-to-br from-rd to-rd-dark text-white
+      font-bold text-xs uppercase tracking-wider transition-all
+      hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0;
+  }
+  .btn-outline {
+    @apply px-5 py-3 rounded-xl border-[1.5px] border-amber/15 text-amber
+      font-bold text-xs uppercase tracking-wider transition-all
+      hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0;
+  }
+  .input {
+    @apply w-full px-4 py-3 rounded-xl border-[1.5px] border-amber/[0.08]
+      bg-bg/60 text-white font-medium text-sm outline-none
+      transition-all focus:border-amber focus:shadow-[0_0_0_4px_rgba(245,166,35,0.06)]
+      placeholder:text-dim placeholder:font-normal;
+  }
+  .label {
+    @apply block text-[10px] font-bold text-muted mb-1.5 uppercase tracking-[1.5px];
+  }
+  .nav-btn {
+    @apply px-4 py-2 rounded-[10px] bg-amber/[0.04] text-muted
+      cursor-pointer font-semibold text-[11px] uppercase tracking-wider
+      transition-all hover:bg-amber/10 hover:text-amber border-none;
+  }
+  .nav-btn.active {
+    @apply bg-amber/[0.12] text-amber shadow-[inset_0_-2px_0_theme(colors.amber.DEFAULT)];
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-lg
+      text-[9px] font-bold tracking-wide uppercase;
+  }
+  .badge-green { @apply bg-gn/[0.12] text-gn; }
+  .badge-red { @apply bg-rd/[0.12] text-rd; }
+  .badge-orange { @apply bg-orange-400/[0.12] text-orange-400; }
+  .toast {
+    @apply fixed top-4 right-4 px-5 py-3 rounded-xl font-semibold text-sm
+      z-[9999] max-w-xs pointer-events-none backdrop-blur-2xl
+      animate-[slideIn_0.3s_ease];
+  }
+  .toast-ok { @apply bg-gn/10 border border-gn/20 text-gn; }
+  .toast-error { @apply bg-rd/10 border border-rd/20 text-rd; }
+  .toast-warn { @apply bg-orange-400/10 border border-orange-400/20 text-orange-400; }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popScale {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes ring {
+  0% { box-shadow: 0 0 0 0 rgba(0, 214, 143, 0.3); }
+  70% { box-shadow: 0 0 0 16px rgba(0, 214, 143, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 214, 143, 0); }
+}
