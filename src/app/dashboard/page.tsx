@@ -246,6 +246,12 @@ export default function DashboardPage() {
     return json;
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    store.clearAuth();
+    router.replace('/login');
+  };
+
   const loadTransactions = async (customerId?: string) => {
     const url = customerId
       ? `/api/transactions?customer_id=${customerId}`
@@ -271,7 +277,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="relative z-10 max-w-[1060px] mx-auto px-5 pb-12">
-        <Header onRefresh={loadCustomers} />
+        <Header onRefresh={loadCustomers} onLogout={handleLogout} />
 
         {store.view === 'dashboard' && (
           <DashboardView onLoadTransactions={loadTransactions} />

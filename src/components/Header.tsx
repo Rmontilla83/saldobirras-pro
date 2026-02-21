@@ -1,11 +1,11 @@
 'use client';
 
 import { useStore } from '@/lib/store';
-import { LayoutDashboard, UserPlus, ArrowLeftRight, BarChart3, RefreshCw, ScanLine, Users, Smartphone, Monitor, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, UserPlus, ArrowLeftRight, BarChart3, RefreshCw, ScanLine, Users, Smartphone, Monitor, ShieldCheck, LogOut } from 'lucide-react';
 
-interface HeaderProps { onRefresh: () => void; }
+interface HeaderProps { onRefresh: () => void; onLogout: () => void; }
 
-export default function Header({ onRefresh }: HeaderProps) {
+export default function Header({ onRefresh, onLogout }: HeaderProps) {
   const { view, setView, synced, user } = useStore();
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 700;
   const isOwner = user?.role === 'owner';
@@ -46,6 +46,7 @@ export default function Header({ onRefresh }: HeaderProps) {
               <NavBtn icon={<ScanLine size={14}/>} active={view==='scan'} onClick={()=>setView('scan')}>Escanear</NavBtn>
               {can('dashboard') && <NavBtn icon={<Users size={14}/>} active={view==='dashboard'} onClick={()=>setView('dashboard')}>Clientes</NavBtn>}
               {can('register') && <NavBtn icon={<UserPlus size={14}/>} active={view==='register'} onClick={()=>setView('register')}>Nuevo</NavBtn>}
+              <NavBtn icon={<LogOut size={14}/>} active={false} onClick={onLogout}></NavBtn>
             </>
           ) : (
             <>
@@ -55,6 +56,7 @@ export default function Header({ onRefresh }: HeaderProps) {
               {can('stats') && <NavBtn icon={<BarChart3 size={14}/>} active={view==='stats'} onClick={()=>setView('stats')}>Informes</NavBtn>}
               {isOwner && <NavBtn icon={<ShieldCheck size={14}/>} active={view==='users'} onClick={()=>setView('users')}>Usuarios</NavBtn>}
               <NavBtn icon={<RefreshCw size={14}/>} active={false} onClick={onRefresh}></NavBtn>
+              <NavBtn icon={<LogOut size={14}/>} active={false} onClick={onLogout}></NavBtn>
             </>
           )}
         </nav>
