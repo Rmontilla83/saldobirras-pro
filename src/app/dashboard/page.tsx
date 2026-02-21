@@ -123,7 +123,31 @@ export default function DashboardPage() {
   };
 
   const createCustomer = async (data: any) => {
-    const res = await apiCall('/api/customers', 'POST', data);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+
+    let res;
+    if (data.photo) {
+      // Use FormData for file upload
+      const formData = new FormData();
+      formData.append('name', data.name);
+      if (data.email) formData.append('email', data.email);
+      if (data.phone) formData.append('phone', data.phone);
+      formData.append('balance_type', data.balance_type);
+      formData.append('initial_balance', String(data.initial_balance));
+      formData.append('photo', data.photo);
+
+      const response = await fetch('/api/customers', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: formData,
+      });
+      res = await response.json();
+    } else {
+      const { photo, ...jsonData } = data;
+      res = await apiCall('/api/customers', 'POST', jsonData);
+    }
+
     if (res?.success) {
       await loadCustomers();
       const customer = useStore.getState().customers.find(c => c.qr_code === res.data.qr_code);

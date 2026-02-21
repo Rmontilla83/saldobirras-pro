@@ -13,7 +13,18 @@ export default function RegisterView({ onSubmit }: Props) {
   const [phone, setPhone] = useState('');
   const [balanceType, setBalanceType] = useState<BalanceType>('money');
   const [initialBalance, setInitialBalance] = useState('');
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhoto(file);
+    const reader = new FileReader();
+    reader.onload = () => setPhotoPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
   const handleSubmit = async () => {
     if (!name || !initialBalance) return;
@@ -24,9 +35,11 @@ export default function RegisterView({ onSubmit }: Props) {
       phone: phone || undefined,
       balance_type: balanceType,
       initial_balance: parseFloat(initialBalance),
+      photo,
     });
     setLoading(false);
     setName(''); setEmail(''); setPhone(''); setInitialBalance('');
+    setPhoto(null); setPhotoPreview(null);
   };
 
   return (
@@ -38,6 +51,21 @@ export default function RegisterView({ onSubmit }: Props) {
         </div>
 
         <div className="space-y-4">
+          {/* Photo upload */}
+          <div className="text-center">
+            <label className="cursor-pointer inline-block">
+              <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+              {photoPreview ? (
+                <img src={photoPreview} alt="Foto" className="w-[80px] h-[80px] rounded-[20px] object-cover mx-auto border-2 border-amber/20" />
+              ) : (
+                <div className="w-[80px] h-[80px] rounded-[20px] bg-amber/[0.04] border-2 border-dashed border-amber/[0.12] flex flex-col items-center justify-center mx-auto hover:border-amber/30 transition-all">
+                  <span className="text-2xl mb-0.5">📷</span>
+                  <span className="text-[8px] text-dim uppercase tracking-wider font-bold">Subir Foto</span>
+                </div>
+              )}
+            </label>
+          </div>
+
           <div>
             <label className="label">Nombre completo</label>
             <input type="text" className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Juan Pérez" />
