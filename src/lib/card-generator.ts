@@ -44,7 +44,7 @@ export async function generateCard({ customer, photoBase64, logoBase64 }: CardOp
   pdf.rect(W * 0.2, H - 0.6, W * 0.6, 0.6, 'F');
 
   // ═══ PHOTO SECTION ═══
-  const px = 4.5, py = 4, pw = 19, ph = 23;
+  const px = 4.5, py = 14.5, pw = 19, ph = 23;
 
   // Gold frame
   pdf.setFillColor(200, 155, 40);
@@ -77,26 +77,26 @@ export async function generateCard({ customer, photoBase64, logoBase64 }: CardOp
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(3.8);
   pdf.setTextColor(200, 155, 40);
-  pdf.text('━━  M I E M B R O  V I P  ━━', ix, 7);
+  pdf.text('━━  M I E M B R O  V I P  ━━', ix, 17.5);
 
   // Name
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(8.5);
   pdf.setTextColor(250, 250, 255);
   const dispName = customer.name.length > 20 ? customer.name.substring(0, 20) + '…' : customer.name;
-  pdf.text(dispName.toUpperCase(), ix, 13);
+  pdf.text(dispName.toUpperCase(), ix, 23);
 
   // Thin gold separator
   pdf.setDrawColor(200, 155, 40);
   pdf.setLineWidth(0.15);
-  pdf.line(ix, 15, ix + 28, 15);
+  pdf.line(ix, 25, ix + 28, 25);
 
   // Contact info
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(4.8);
   pdf.setTextColor(130, 150, 180);
 
-  let cy = 19;
+  let cy = 29;
   if (customer.email) {
     pdf.text(customer.email, ix, cy);
     cy += 3.5;
@@ -124,7 +124,7 @@ export async function generateCard({ customer, photoBase64, logoBase64 }: CardOp
     color: { dark: '#0A1020', light: '#FFFFFF' },
   });
 
-  const qs = 19, qx = W - qs - 5, qy = 3.5;
+  const qs = 19, qx = W - qs - 5, qy = 14;
 
   // Gold frame for QR
   pdf.setFillColor(200, 155, 40);
@@ -143,35 +143,43 @@ export async function generateCard({ customer, photoBase64, logoBase64 }: CardOp
   pdf.setTextColor(200, 155, 40);
   pdf.text('ESCANEAR', qx + qs / 2, qy + qs + 2.8, { align: 'center' });
 
-  // ═══ BOTTOM SECTION ═══
+  // ═══ BOTTOM SECTION → MOVED TO TOP BAR WITH LOGO ═══
 
-  // Separator line
-  pdf.setDrawColor(30, 42, 65);
-  pdf.setLineWidth(0.08);
-  pdf.line(4, H - 10, W - 4, H - 10);
+  // Logo bar at top (larger)
+  // Dark bar behind logo area
+  pdf.setFillColor(12, 20, 38);
+  pdf.rect(0, 0.6, W, 11, 'F');
 
-  // Logo
+  // Gold accent line below logo bar
+  pdf.setDrawColor(200, 155, 40);
+  pdf.setLineWidth(0.2);
+  pdf.line(0, 11.6, W, 11.6);
+
+  // Logo — draw on dark background so transparency looks correct
   if (logoBase64) {
-    pdf.addImage(logoBase64, 'PNG', 4, H - 9.5, 7.5, 7.5);
+    // Draw dark circle behind logo to mask any transparency issues
+    pdf.setFillColor(12, 20, 38);
+    pdf.circle(8, 6.2, 5, 'F');
+    pdf.addImage(logoBase64, 'PNG', 3, 1.5, 10, 10);
   }
 
-  // Brand
+  // Brand text next to logo
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(6.5);
+  pdf.setFontSize(8);
   pdf.setTextColor(200, 155, 40);
-  pdf.text('BIRRASPORT', 13.5, H - 5.5);
+  pdf.text('BIRRASPORT', 15, 5.5);
 
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(3.2);
-  pdf.setTextColor(80, 100, 130);
-  pdf.text('Cervecería Premium', 13.5, H - 3);
+  pdf.setFontSize(3.8);
+  pdf.setTextColor(90, 110, 140);
+  pdf.text('Cervecería Premium  ·  SaldoBirras', 15, 8.5);
 
-  // Card ID
+  // Card ID at bottom right
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(2.8);
   pdf.setTextColor(50, 65, 90);
-  pdf.text(customer.qr_code, W - 4, H - 3, { align: 'right' });
-  pdf.text('CARD ID', W - 4, H - 5.5, { align: 'right' });
+  pdf.text(customer.qr_code, W - 4, H - 2, { align: 'right' });
+  pdf.text('CARD ID', W - 4, H - 4.5, { align: 'right' });
 
   // ═══ SAVE ═══
   const safe = customer.name.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_');
