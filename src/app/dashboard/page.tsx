@@ -159,8 +159,12 @@ export default function DashboardPage() {
     if (res?.success) {
       await loadCustomers();
       const customer = useStore.getState().customers.find(c => c.qr_code === res.data.qr_code);
-      if (customer) store.setView('customer', customer);
-      showToast(`✓ ${data.name} registrado`);
+      if (customer) {
+        store.setView('customer', customer);
+        // Auto-generate card PDF
+        import('@/lib/card-generator').then(({ generateCard }) => generateCard(customer)).catch(console.error);
+      }
+      showToast(`✓ ${data.name} registrado — carnet descargado`);
     } else {
       showToast(res?.error || 'Error al registrar', 'error');
     }

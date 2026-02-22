@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { formatBalance, formatMoney, formatDate, isLowBalance, BANKS } from '@/lib/utils';
-import { ArrowLeft, Pencil, Mail, QrCode, Minus, Plus, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft, Pencil, Mail, QrCode, Minus, Plus, TrendingUp, TrendingDown, CreditCard } from 'lucide-react';
 import Avatar from './Avatar';
 import StatusBadge from './StatusBadge';
 import EditCustomerModal from './EditCustomerModal';
@@ -159,6 +159,12 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                 <Mail size={12}/> Enviar por Correo
               </button>
             )}
+            <button onClick={async () => {
+              const { generateCard } = await import('@/lib/card-generator');
+              await generateCard(c);
+            }} className="btn-outline mt-2 text-[10px] px-3 py-2 flex items-center gap-1.5 mx-auto">
+              <CreditCard size={12}/> Imprimir Carnet
+            </button>
           </div>
 
           <div className="card max-h-[340px] overflow-y-auto">
