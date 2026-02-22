@@ -28,10 +28,8 @@ export async function generateCard({ customer, photoBase64, logoBase64 }: CardOp
   }
 
   // Dark overlay to soften texture
-  pdf.setGState(new pdf.GState({ opacity: 0.7 }));
   pdf.setFillColor(10, 16, 32);
   pdf.rect(0, 0, W, H, 'F');
-  pdf.setGState(new pdf.GState({ opacity: 1 }));
 
   // ═══ TOP GOLD BAR ═══
   pdf.setFillColor(212, 155, 40);
