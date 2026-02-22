@@ -12,161 +12,241 @@ export async function generateCard(customer: Customer): Promise<void> {
     format: [CARD_H, CARD_W],
   });
 
-  // ─── Background ───
-  doc.setFillColor(6, 10, 19);
+  // ═══════════════════════════════════════════
+  // PREMIUM BACKGROUND
+  // ═══════════════════════════════════════════
+
+  // Deep navy base
+  doc.setFillColor(8, 14, 28);
   doc.rect(0, 0, CARD_W, CARD_H, 'F');
 
-  // Top amber strip
+  // Subtle gradient overlay (darker at edges)
+  doc.setFillColor(4, 8, 18);
+  doc.rect(0, 0, CARD_W, 6, 'F');
+  doc.setFillColor(4, 8, 18);
+  doc.rect(0, CARD_H - 6, CARD_W, 6, 'F');
+
+  // ═══════════════════════════════════════════
+  // TOP GOLD ACCENT BAR
+  // ═══════════════════════════════════════════
+  const gradient = [
+    { x: 0, w: CARD_W * 0.15, r: 180, g: 130, b: 20 },
+    { x: CARD_W * 0.15, w: CARD_W * 0.7, r: 245, g: 166, b: 35 },
+    { x: CARD_W * 0.85, w: CARD_W * 0.15, r: 180, g: 130, b: 20 },
+  ];
+  gradient.forEach(g => {
+    doc.setFillColor(g.r, g.g, g.b);
+    doc.rect(g.x, 0, g.w, 0.8, 'F');
+  });
+
+  // Thin white line below gold
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.05);
+  doc.line(0, 0.85, CARD_W, 0.85);
+
+  // ═══════════════════════════════════════════
+  // LEFT SIDE — PHOTO + IDENTITY
+  // ═══════════════════════════════════════════
+
+  // Photo area with premium border
+  const photoX = 4;
+  const photoY = 5;
+  const photoW = 20;
+  const photoH = 24;
+
+  // Photo shadow
+  doc.setFillColor(0, 0, 0);
+  doc.roundedRect(photoX + 0.3, photoY + 0.3, photoW, photoH, 2, 2, 'F');
+
+  // Photo border (gold)
   doc.setFillColor(245, 166, 35);
-  doc.rect(0, 0, CARD_W, 1.2, 'F');
+  doc.roundedRect(photoX - 0.5, photoY - 0.5, photoW + 1, photoH + 1, 2.2, 2.2, 'F');
 
-  // ─── Logo ───
-  try {
-    const logoData = await fetchImageAsBase64('/logo.png');
-    if (logoData) {
-      doc.addImage(logoData, 'PNG', 3, 3, 13, 13);
-    }
-  } catch {}
+  // Photo inner bg
+  doc.setFillColor(15, 25, 45);
+  doc.roundedRect(photoX, photoY, photoW, photoH, 2, 2, 'F');
 
-  // ─── Brand ───
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.setTextColor(245, 166, 35);
-  doc.text('SALDOBIRRAS', 18, 9);
-
-  doc.setFontSize(4.5);
-  doc.setTextColor(100, 116, 139);
-  doc.text('BIRRASPORT', 18, 12.5);
-
-  // ─── Divider ───
-  doc.setDrawColor(40, 60, 90);
-  doc.setLineWidth(0.15);
-  doc.line(3, 18, CARD_W - 3, 18);
-
-  // ─── Customer photo ───
-  const photoX = 3;
-  const photoY = 21;
-  const photoSize = 16;
   let photoLoaded = false;
-
   if (customer.photo_url) {
     try {
-      const photoData = await fetchImageAsBase64(customer.photo_url);
+      const photoData = await loadImage(customer.photo_url);
       if (photoData) {
-        doc.addImage(photoData, 'JPEG', photoX, photoY, photoSize, photoSize);
-        doc.setDrawColor(245, 166, 35);
-        doc.setLineWidth(0.3);
-        doc.roundedRect(photoX, photoY, photoSize, photoSize, 1.5, 1.5, 'S');
+        doc.addImage(photoData, 'JPEG', photoX + 0.5, photoY + 0.5, photoW - 1, photoH - 1);
         photoLoaded = true;
       }
     } catch {}
   }
 
   if (!photoLoaded) {
-    drawInitials(doc, customer.name, photoX, photoY, photoSize);
+    const initials = customer.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    doc.setFillColor(30, 50, 80);
+    doc.roundedRect(photoX + 0.5, photoY + 0.5, photoW - 1, photoH - 1, 1.5, 1.5, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(245, 166, 35);
+    doc.text(initials, photoX + photoW / 2, photoY + photoH / 2 + 2.5, { align: 'center' });
   }
 
-  // ─── Customer info ───
-  const infoX = photoX + photoSize + 4;
+  // ═══════════════════════════════════════════
+  // CENTER — CUSTOMER INFO
+  // ═══════════════════════════════════════════
+  const infoX = photoX + photoW + 4;
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7.5);
-  doc.setTextColor(255, 255, 255);
-  const displayName = customer.name.length > 24 ? customer.name.substring(0, 24) + '...' : customer.name;
-  doc.text(displayName.toUpperCase(), infoX, 25);
-
+  // "MIEMBRO" label
+  doc.setFontSize(4);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(5);
-  doc.setTextColor(148, 163, 184);
+  doc.setTextColor(245, 166, 35);
+  doc.text('M I E M B R O', infoX, 8);
 
-  let infoY = 29;
+  // Tiny gold line
+  doc.setDrawColor(245, 166, 35);
+  doc.setLineWidth(0.2);
+  doc.line(infoX, 9.5, infoX + 18, 9.5);
+
+  // Customer name
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(255, 255, 255);
+  const name = customer.name.length > 22 ? customer.name.substring(0, 22) + '…' : customer.name;
+  doc.text(name.toUpperCase(), infoX, 14);
+
+  // Email
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(4.5);
+  doc.setTextColor(120, 140, 170);
+
+  let lineY = 17.5;
   if (customer.email) {
-    doc.text(customer.email, infoX, infoY);
-    infoY += 3.5;
+    doc.text(customer.email, infoX, lineY);
+    lineY += 3.2;
   }
   if (customer.phone) {
-    doc.text(customer.phone, infoX, infoY);
-    infoY += 3.5;
+    doc.text(customer.phone, infoX, lineY);
+    lineY += 3.2;
   }
 
-  doc.setFontSize(4);
-  doc.setTextColor(80, 100, 120);
-  const typeLabel = customer.balance_type === 'money' ? 'SALDO EN DÓLARES' : 'SALDO EN CERVEZAS';
-  doc.text(typeLabel, infoX, infoY + 1);
+  // Balance type badge
+  doc.setFillColor(245, 166, 35, 0.15);
+  doc.setFillColor(30, 40, 60);
+  const badgeText = customer.balance_type === 'money' ? '$ DÓLARES' : '🍺 CERVEZAS';
+  const badgeW = doc.getTextWidth(badgeText) * 0.7 + 4;
+  doc.roundedRect(infoX, lineY, badgeW, 4, 1, 1, 'F');
+  doc.setDrawColor(245, 166, 35);
+  doc.setLineWidth(0.1);
+  doc.roundedRect(infoX, lineY, badgeW, 4, 1, 1, 'S');
+  doc.setFontSize(3.5);
+  doc.setTextColor(245, 166, 35);
+  doc.text(badgeText, infoX + 2, lineY + 2.8);
 
-  // ─── QR Code ───
+  // ═══════════════════════════════════════════
+  // RIGHT SIDE — QR CODE
+  // ═══════════════════════════════════════════
   try {
     const QRCode = await import('qrcode');
     const qrDataUrl = await QRCode.toDataURL(customer.qr_code, {
-      width: 300,
-      margin: 1,
-      color: { dark: '#1B2A4A', light: '#FFFFFF' },
+      width: 400,
+      margin: 0,
+      color: { dark: '#0E1C36', light: '#FFFFFF' },
     });
-    const qrSize = 18;
-    const qrX = CARD_W - qrSize - 4;
-    const qrY = 20;
 
+    const qrSize = 20;
+    const qrX = CARD_W - qrSize - 5;
+    const qrY = 4;
+
+    // QR outer frame (gold border)
+    doc.setFillColor(245, 166, 35);
+    doc.roundedRect(qrX - 1.5, qrY - 1.5, qrSize + 3, qrSize + 3, 2, 2, 'F');
+
+    // QR white background
     doc.setFillColor(255, 255, 255);
-    doc.roundedRect(qrX - 1.5, qrY - 1.5, qrSize + 3, qrSize + 3, 1.5, 1.5, 'F');
+    doc.roundedRect(qrX - 0.8, qrY - 0.8, qrSize + 1.6, qrSize + 1.6, 1.5, 1.5, 'F');
+
+    // QR code
     doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
 
-    doc.setFontSize(3.2);
-    doc.setTextColor(80, 100, 120);
-    const qrLabel = customer.qr_code.length > 18 ? customer.qr_code.substring(0, 18) : customer.qr_code;
-    doc.text(qrLabel, qrX + qrSize / 2, qrY + qrSize + 3.5, { align: 'center' });
-  } catch (e) {
-    console.error('QR error', e);
-  }
+    // "ESCANEA AQUÍ" below QR
+    doc.setFontSize(3.5);
+    doc.setTextColor(245, 166, 35);
+    doc.text('ESCANEA AQUÍ', qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
+  } catch {}
 
-  // ─── Bottom strip ───
+  // ═══════════════════════════════════════════
+  // BOTTOM SECTION
+  // ═══════════════════════════════════════════
+
+  // Decorative line
+  doc.setDrawColor(35, 50, 75);
+  doc.setLineWidth(0.1);
+  doc.line(4, CARD_H - 12, CARD_W - 4, CARD_H - 12);
+
+  // Logo at bottom left
+  try {
+    const logoData = await loadImage('/logo.png');
+    if (logoData) {
+      doc.addImage(logoData, 'PNG', 4, CARD_H - 10.5, 8, 8);
+    }
+  } catch {}
+
+  // Brand name
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(245, 166, 35);
+  doc.text('BIRRASPORT', 14, CARD_H - 6);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(3.5);
+  doc.setTextColor(70, 90, 120);
+  doc.text('Cervecería Premium', 14, CARD_H - 3.5);
+
+  // QR code ID at bottom right
+  doc.setFontSize(3);
+  doc.setTextColor(50, 65, 90);
+  doc.text(customer.qr_code, CARD_W - 4, CARD_H - 3.5, { align: 'right' });
+  doc.text('ID', CARD_W - 4, CARD_H - 6, { align: 'right' });
+
+  // Bottom gold bar
   doc.setFillColor(245, 166, 35);
-  doc.rect(0, CARD_H - 1.2, CARD_W, 1.2, 'F');
+  doc.rect(0, CARD_H - 0.8, CARD_W, 0.8, 'F');
 
-  doc.setFontSize(3.2);
-  doc.setTextColor(80, 100, 120);
-  doc.text('Presenta este carnet para usar tu saldo', CARD_W / 2, CARD_H - 2.5, { align: 'center' });
-
-  // ─── Save ───
+  // ═══════════════════════════════════════════
+  // SAVE
+  // ═══════════════════════════════════════════
   const safeName = customer.name.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_');
   doc.save(`Carnet_${safeName}.pdf`);
 }
 
-function drawInitials(doc: any, name: string, x: number, y: number, size: number) {
-  const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  doc.setFillColor(245, 166, 35);
-  doc.roundedRect(x, y, size, size, 1.5, 1.5, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(6, 10, 19);
-  doc.text(initials, x + size / 2, y + size / 2 + 1.5, { align: 'center' });
-}
-
-async function fetchImageAsBase64(url: string): Promise<string | null> {
+// Robust image loader: fetch as blob, draw to canvas (fixes EXIF rotation), return base64
+async function loadImage(url: string): Promise<string | null> {
   try {
-    const response = await fetch(url, { mode: 'cors' });
+    // Step 1: Fetch the image as blob
+    const response = await fetch(url, { cache: 'no-cache' });
     if (!response.ok) return null;
     const blob = await response.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
+
+    // Step 2: Create an ImageBitmap (auto-corrects EXIF orientation)
+    const bitmap = await createImageBitmap(blob);
+
+    // Step 3: Draw to canvas at fixed size (normalizes orientation)
+    const canvas = document.createElement('canvas');
+    const maxSize = 400;
+    let w = bitmap.width;
+    let h = bitmap.height;
+
+    if (w > maxSize || h > maxSize) {
+      const ratio = Math.min(maxSize / w, maxSize / h);
+      w = Math.round(w * ratio);
+      h = Math.round(h * ratio);
+    }
+
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close();
+
+    return canvas.toDataURL('image/jpeg', 0.85);
   } catch {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) { resolve(null); return; }
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/jpeg', 0.9));
-      };
-      img.onerror = () => resolve(null);
-      img.src = url;
-    });
+    return null;
   }
 }
