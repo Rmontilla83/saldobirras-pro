@@ -162,7 +162,13 @@ export default function DashboardPage() {
       if (customer) {
         store.setView('customer', customer);
         // Auto-generate card PDF
-        import('@/lib/card-generator').then(({ generateCard }) => generateCard(customer)).catch(console.error);
+        import('@/lib/card-generator').then(async ({ generateCard, preloadImage }) => {
+          const [photoBase64, logoBase64] = await Promise.all([
+            customer.photo_url ? preloadImage(customer.photo_url) : Promise.resolve(null),
+            preloadImage('/logo.png'),
+          ]);
+          await generateCard({ customer, photoBase64, logoBase64 });
+        }).catch(console.error);
       }
       showToast(`✓ ${data.name} registrado — carnet descargado`);
     } else {

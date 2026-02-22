@@ -1,250 +1,207 @@
 import type { Customer } from './types';
 
-const CARD_W = 85.6;
-const CARD_H = 54;
+const W = 85.6;
+const H = 54;
 
-export async function generateCard(customer: Customer): Promise<void> {
-  const { jsPDF } = await import('jspdf');
-
-  const doc = new jsPDF({
-    orientation: 'landscape',
-    unit: 'mm',
-    format: [CARD_H, CARD_W],
-  });
-
-  // ═══════════════════════════════════════════
-  // PREMIUM BACKGROUND
-  // ═══════════════════════════════════════════
-
-  // Deep navy base
-  doc.setFillColor(8, 14, 28);
-  doc.rect(0, 0, CARD_W, CARD_H, 'F');
-
-  // Subtle gradient overlay (darker at edges)
-  doc.setFillColor(4, 8, 18);
-  doc.rect(0, 0, CARD_W, 6, 'F');
-  doc.setFillColor(4, 8, 18);
-  doc.rect(0, CARD_H - 6, CARD_W, 6, 'F');
-
-  // ═══════════════════════════════════════════
-  // TOP GOLD ACCENT BAR
-  // ═══════════════════════════════════════════
-  const gradient = [
-    { x: 0, w: CARD_W * 0.15, r: 180, g: 130, b: 20 },
-    { x: CARD_W * 0.15, w: CARD_W * 0.7, r: 245, g: 166, b: 35 },
-    { x: CARD_W * 0.85, w: CARD_W * 0.15, r: 180, g: 130, b: 20 },
-  ];
-  gradient.forEach(g => {
-    doc.setFillColor(g.r, g.g, g.b);
-    doc.rect(g.x, 0, g.w, 0.8, 'F');
-  });
-
-  // Thin white line below gold
-  doc.setDrawColor(255, 255, 255);
-  doc.setLineWidth(0.05);
-  doc.line(0, 0.85, CARD_W, 0.85);
-
-  // ═══════════════════════════════════════════
-  // LEFT SIDE — PHOTO + IDENTITY
-  // ═══════════════════════════════════════════
-
-  // Photo area with premium border
-  const photoX = 4;
-  const photoY = 5;
-  const photoW = 20;
-  const photoH = 24;
-
-  // Photo shadow
-  doc.setFillColor(0, 0, 0);
-  doc.roundedRect(photoX + 0.3, photoY + 0.3, photoW, photoH, 2, 2, 'F');
-
-  // Photo border (gold)
-  doc.setFillColor(245, 166, 35);
-  doc.roundedRect(photoX - 0.5, photoY - 0.5, photoW + 1, photoH + 1, 2.2, 2.2, 'F');
-
-  // Photo inner bg
-  doc.setFillColor(15, 25, 45);
-  doc.roundedRect(photoX, photoY, photoW, photoH, 2, 2, 'F');
-
-  let photoLoaded = false;
-  if (customer.photo_url) {
-    try {
-      const photoData = await loadImage(customer.photo_url);
-      if (photoData) {
-        doc.addImage(photoData, 'JPEG', photoX + 0.5, photoY + 0.5, photoW - 1, photoH - 1);
-        photoLoaded = true;
-      }
-    } catch {}
-  }
-
-  if (!photoLoaded) {
-    const initials = customer.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-    doc.setFillColor(30, 50, 80);
-    doc.roundedRect(photoX + 0.5, photoY + 0.5, photoW - 1, photoH - 1, 1.5, 1.5, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.setTextColor(245, 166, 35);
-    doc.text(initials, photoX + photoW / 2, photoY + photoH / 2 + 2.5, { align: 'center' });
-  }
-
-  // ═══════════════════════════════════════════
-  // CENTER — CUSTOMER INFO
-  // ═══════════════════════════════════════════
-  const infoX = photoX + photoW + 4;
-
-  // "MIEMBRO" label
-  doc.setFontSize(4);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(245, 166, 35);
-  doc.text('M I E M B R O', infoX, 8);
-
-  // Tiny gold line
-  doc.setDrawColor(245, 166, 35);
-  doc.setLineWidth(0.2);
-  doc.line(infoX, 9.5, infoX + 18, 9.5);
-
-  // Customer name
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.setTextColor(255, 255, 255);
-  const name = customer.name.length > 22 ? customer.name.substring(0, 22) + '…' : customer.name;
-  doc.text(name.toUpperCase(), infoX, 14);
-
-  // Email
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(4.5);
-  doc.setTextColor(120, 140, 170);
-
-  let lineY = 17.5;
-  if (customer.email) {
-    doc.text(customer.email, infoX, lineY);
-    lineY += 3.2;
-  }
-  if (customer.phone) {
-    doc.text(customer.phone, infoX, lineY);
-    lineY += 3.2;
-  }
-
-  // Balance type badge
-  doc.setFillColor(245, 166, 35, 0.15);
-  doc.setFillColor(30, 40, 60);
-  const badgeText = customer.balance_type === 'money' ? '$ DÓLARES' : '🍺 CERVEZAS';
-  const badgeW = doc.getTextWidth(badgeText) * 0.7 + 4;
-  doc.roundedRect(infoX, lineY, badgeW, 4, 1, 1, 'F');
-  doc.setDrawColor(245, 166, 35);
-  doc.setLineWidth(0.1);
-  doc.roundedRect(infoX, lineY, badgeW, 4, 1, 1, 'S');
-  doc.setFontSize(3.5);
-  doc.setTextColor(245, 166, 35);
-  doc.text(badgeText, infoX + 2, lineY + 2.8);
-
-  // ═══════════════════════════════════════════
-  // RIGHT SIDE — QR CODE
-  // ═══════════════════════════════════════════
-  try {
-    const QRCode = await import('qrcode');
-    const qrDataUrl = await QRCode.toDataURL(customer.qr_code, {
-      width: 400,
-      margin: 0,
-      color: { dark: '#0E1C36', light: '#FFFFFF' },
-    });
-
-    const qrSize = 20;
-    const qrX = CARD_W - qrSize - 5;
-    const qrY = 4;
-
-    // QR outer frame (gold border)
-    doc.setFillColor(245, 166, 35);
-    doc.roundedRect(qrX - 1.5, qrY - 1.5, qrSize + 3, qrSize + 3, 2, 2, 'F');
-
-    // QR white background
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(qrX - 0.8, qrY - 0.8, qrSize + 1.6, qrSize + 1.6, 1.5, 1.5, 'F');
-
-    // QR code
-    doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
-
-    // "ESCANEA AQUÍ" below QR
-    doc.setFontSize(3.5);
-    doc.setTextColor(245, 166, 35);
-    doc.text('ESCANEA AQUÍ', qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
-  } catch {}
-
-  // ═══════════════════════════════════════════
-  // BOTTOM SECTION
-  // ═══════════════════════════════════════════
-
-  // Decorative line
-  doc.setDrawColor(35, 50, 75);
-  doc.setLineWidth(0.1);
-  doc.line(4, CARD_H - 12, CARD_W - 4, CARD_H - 12);
-
-  // Logo at bottom left
-  try {
-    const logoData = await loadImage('/logo.png');
-    if (logoData) {
-      doc.addImage(logoData, 'PNG', 4, CARD_H - 10.5, 8, 8);
-    }
-  } catch {}
-
-  // Brand name
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7);
-  doc.setTextColor(245, 166, 35);
-  doc.text('BIRRASPORT', 14, CARD_H - 6);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(3.5);
-  doc.setTextColor(70, 90, 120);
-  doc.text('Cervecería Premium', 14, CARD_H - 3.5);
-
-  // QR code ID at bottom right
-  doc.setFontSize(3);
-  doc.setTextColor(50, 65, 90);
-  doc.text(customer.qr_code, CARD_W - 4, CARD_H - 3.5, { align: 'right' });
-  doc.text('ID', CARD_W - 4, CARD_H - 6, { align: 'right' });
-
-  // Bottom gold bar
-  doc.setFillColor(245, 166, 35);
-  doc.rect(0, CARD_H - 0.8, CARD_W, 0.8, 'F');
-
-  // ═══════════════════════════════════════════
-  // SAVE
-  // ═══════════════════════════════════════════
-  const safeName = customer.name.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_');
-  doc.save(`Carnet_${safeName}.pdf`);
+interface CardOptions {
+  customer: Customer;
+  photoBase64: string | null;
+  logoBase64: string | null;
 }
 
-// Robust image loader: fetch as blob, draw to canvas (fixes EXIF rotation), return base64
-async function loadImage(url: string): Promise<string | null> {
+export async function generateCard({ customer, photoBase64, logoBase64 }: CardOptions): Promise<void> {
+  const { jsPDF } = await import('jspdf');
+  const QRCode = await import('qrcode');
+
+  const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [H, W] });
+
+  // ═══ BACKGROUND ═══
+  // Dark premium base
+  pdf.setFillColor(10, 16, 32);
+  pdf.rect(0, 0, W, H, 'F');
+
+  // Subtle diagonal texture lines
+  pdf.setDrawColor(18, 28, 50);
+  pdf.setLineWidth(0.08);
+  for (let i = -H; i < W + H; i += 3) {
+    pdf.line(i, 0, i + H, H);
+  }
+
+  // Dark overlay to soften texture
+  pdf.setGState(new pdf.GState({ opacity: 0.7 }));
+  pdf.setFillColor(10, 16, 32);
+  pdf.rect(0, 0, W, H, 'F');
+  pdf.setGState(new pdf.GState({ opacity: 1 }));
+
+  // ═══ TOP GOLD BAR ═══
+  pdf.setFillColor(212, 155, 40);
+  pdf.rect(0, 0, W, 0.6, 'F');
+  pdf.setFillColor(245, 190, 60);
+  pdf.rect(W * 0.2, 0, W * 0.6, 0.6, 'F');
+
+  // ═══ BOTTOM GOLD BAR ═══
+  pdf.setFillColor(212, 155, 40);
+  pdf.rect(0, H - 0.6, W, 0.6, 'F');
+  pdf.setFillColor(245, 190, 60);
+  pdf.rect(W * 0.2, H - 0.6, W * 0.6, 0.6, 'F');
+
+  // ═══ PHOTO SECTION ═══
+  const px = 4.5, py = 4, pw = 19, ph = 23;
+
+  // Gold frame
+  pdf.setFillColor(200, 155, 40);
+  pdf.roundedRect(px - 0.8, py - 0.8, pw + 1.6, ph + 1.6, 1.8, 1.8, 'F');
+
+  // Inner dark bg
+  pdf.setFillColor(15, 22, 40);
+  pdf.roundedRect(px, py, pw, ph, 1.2, 1.2, 'F');
+
+  if (photoBase64) {
+    // Clip to rounded rect manually — draw image then overlay borders
+    pdf.addImage(photoBase64, 'JPEG', px + 0.4, py + 0.4, pw - 0.8, ph - 0.8);
+    // Re-draw gold frame on top
+    pdf.setDrawColor(200, 155, 40);
+    pdf.setLineWidth(0.8);
+    pdf.roundedRect(px, py, pw, ph, 1.2, 1.2, 'S');
+  } else {
+    // Initials
+    const initials = customer.name.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(18);
+    pdf.setTextColor(200, 155, 40);
+    pdf.text(initials, px + pw / 2, py + ph / 2 + 3, { align: 'center' });
+  }
+
+  // ═══ CUSTOMER INFO ═══
+  const ix = px + pw + 3.5;
+
+  // VIP label
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(3.8);
+  pdf.setTextColor(200, 155, 40);
+  pdf.text('━━  M I E M B R O  V I P  ━━', ix, 7);
+
+  // Name
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8.5);
+  pdf.setTextColor(250, 250, 255);
+  const dispName = customer.name.length > 20 ? customer.name.substring(0, 20) + '…' : customer.name;
+  pdf.text(dispName.toUpperCase(), ix, 13);
+
+  // Thin gold separator
+  pdf.setDrawColor(200, 155, 40);
+  pdf.setLineWidth(0.15);
+  pdf.line(ix, 15, ix + 28, 15);
+
+  // Contact info
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(4.8);
+  pdf.setTextColor(130, 150, 180);
+
+  let cy = 19;
+  if (customer.email) {
+    pdf.text(customer.email, ix, cy);
+    cy += 3.5;
+  }
+  if (customer.phone) {
+    pdf.text(customer.phone, ix, cy);
+    cy += 4;
+  }
+
+  // Balance type pill
+  pdf.setFillColor(20, 30, 55);
+  pdf.setDrawColor(200, 155, 40);
+  pdf.setLineWidth(0.15);
+  const pillText = customer.balance_type === 'money' ? '  $  SALDO EN DÓLARES  ' : '  🍺  SALDO EN CERVEZAS  ';
+  const pillW = 28;
+  pdf.roundedRect(ix, cy, pillW, 4.5, 1.2, 1.2, 'FD');
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(3.5);
+  pdf.setTextColor(200, 155, 40);
+  pdf.text(pillText, ix + pillW / 2, cy + 3, { align: 'center' });
+
+  // ═══ QR CODE ═══
+  const qrDataUrl = await QRCode.toDataURL(customer.qr_code, {
+    width: 500, margin: 0,
+    color: { dark: '#0A1020', light: '#FFFFFF' },
+  });
+
+  const qs = 19, qx = W - qs - 5, qy = 3.5;
+
+  // Gold frame for QR
+  pdf.setFillColor(200, 155, 40);
+  pdf.roundedRect(qx - 1.2, qy - 1.2, qs + 2.4, qs + 2.4, 2, 2, 'F');
+
+  // White QR background
+  pdf.setFillColor(255, 255, 255);
+  pdf.roundedRect(qx - 0.4, qy - 0.4, qs + 0.8, qs + 0.8, 1.2, 1.2, 'F');
+
+  // QR image
+  pdf.addImage(qrDataUrl, 'PNG', qx, qy, qs, qs);
+
+  // Scan label
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(3.2);
+  pdf.setTextColor(200, 155, 40);
+  pdf.text('ESCANEAR', qx + qs / 2, qy + qs + 2.8, { align: 'center' });
+
+  // ═══ BOTTOM SECTION ═══
+
+  // Separator line
+  pdf.setDrawColor(30, 42, 65);
+  pdf.setLineWidth(0.08);
+  pdf.line(4, H - 10, W - 4, H - 10);
+
+  // Logo
+  if (logoBase64) {
+    pdf.addImage(logoBase64, 'PNG', 4, H - 9.5, 7.5, 7.5);
+  }
+
+  // Brand
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(6.5);
+  pdf.setTextColor(200, 155, 40);
+  pdf.text('BIRRASPORT', 13.5, H - 5.5);
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(3.2);
+  pdf.setTextColor(80, 100, 130);
+  pdf.text('Cervecería Premium', 13.5, H - 3);
+
+  // Card ID
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(2.8);
+  pdf.setTextColor(50, 65, 90);
+  pdf.text(customer.qr_code, W - 4, H - 3, { align: 'right' });
+  pdf.text('CARD ID', W - 4, H - 5.5, { align: 'right' });
+
+  // ═══ SAVE ═══
+  const safe = customer.name.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_');
+  pdf.save(`Carnet_${safe}.pdf`);
+}
+
+// Helper: preload an image URL to base64 (call from component, not from jsPDF)
+export async function preloadImage(url: string): Promise<string | null> {
   try {
-    // Step 1: Fetch the image as blob
-    const response = await fetch(url, { cache: 'no-cache' });
-    if (!response.ok) return null;
-    const blob = await response.blob();
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const blob = await res.blob();
 
-    // Step 2: Create an ImageBitmap (auto-corrects EXIF orientation)
+    // Use createImageBitmap to auto-fix EXIF rotation
     const bitmap = await createImageBitmap(blob);
-
-    // Step 3: Draw to canvas at fixed size (normalizes orientation)
     const canvas = document.createElement('canvas');
-    const maxSize = 400;
-    let w = bitmap.width;
-    let h = bitmap.height;
-
-    if (w > maxSize || h > maxSize) {
-      const ratio = Math.min(maxSize / w, maxSize / h);
-      w = Math.round(w * ratio);
-      h = Math.round(h * ratio);
+    const max = 500;
+    let w = bitmap.width, h = bitmap.height;
+    if (w > max || h > max) {
+      const r = Math.min(max / w, max / h);
+      w = Math.round(w * r);
+      h = Math.round(h * r);
     }
-
     canvas.width = w;
     canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
+    const ctx = canvas.getContext('2d')!;
     ctx.drawImage(bitmap, 0, 0, w, h);
     bitmap.close();
-
     return canvas.toDataURL('image/jpeg', 0.85);
   } catch {
     return null;
