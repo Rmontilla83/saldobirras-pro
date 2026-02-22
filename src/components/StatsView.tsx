@@ -24,7 +24,7 @@ const PIE_COLORS = [GOLD, GREEN, BLUE, PURPLE, CYAN, RED, '#F59E0B', '#EC4899'];
 export default function StatsView({ onLoadTransactions }: Props) {
   const { customers } = useStore();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [period, setPeriod] = useState<'7d' | '30d' | '90d' | '365d'>('30d');
+  const [period, setPeriod] = useState<'today' | '7d' | '30d' | '90d' | '365d'>('today');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,8 +32,10 @@ export default function StatsView({ onLoadTransactions }: Props) {
     onLoadTransactions().then(d => { setTransactions(d); setLoading(false); });
   }, []);
 
-  const days = period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : 365;
-  const cutoff = new Date(Date.now() - days * 86400000);
+  const cutoff = period === 'today' 
+    ? new Date(new Date().setHours(0, 0, 0, 0)) 
+    : new Date(Date.now() - (period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : 365) * 86400000);
+  const days = period === 'today' ? 1 : period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : 365;
   const filtered = useMemo(() => transactions.filter(t => new Date(t.created_at) >= cutoff), [transactions, period]);
 
   // ─── KPIs ───
@@ -132,9 +134,9 @@ export default function StatsView({ onLoadTransactions }: Props) {
     <div className="animate-[fadeIn_0.25s_ease]">
       {/* Period selector */}
       <div className="flex gap-1 mb-5">
-        {(['7d', '30d', '90d', '365d'] as const).map(p => (
+        {(['today', '7d', '30d', '90d', '365d'] as const).map(p => (
           <button key={p} onClick={() => setPeriod(p)} className={`nav-btn ${period === p ? 'active' : ''}`}>
-            {p === '365d' ? '1 Año' : p === '90d' ? '3 Meses' : p === '30d' ? '30 Días' : '7 Días'}
+            {p === '365d' ? '1 Año' : p === '90d' ? '3 Meses' : p === '30d' ? '30 Días' : p === '7d' ? '7 Días' : 'Hoy'}
           </button>
         ))}
       </div>
