@@ -14,7 +14,6 @@ export async function GET(req: NextRequest) {
     .from('customers')
     .select('*')
     .eq('business_id', user.business_id)
-    .eq('is_active', true)
     .order('created_at', { ascending: false });
 
   if (error) return badRequest(error.message);

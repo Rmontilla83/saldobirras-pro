@@ -180,6 +180,8 @@ export default function DashboardPage() {
   const processTransaction = async (type: 'recharge' | 'consume', data: any) => {
     const res = await apiCall('/api/transactions', 'POST', { type, ...data });
     if (res?.success) {
+      // Small delay to let DB trigger update is_active
+      await new Promise(r => setTimeout(r, 200));
       await loadCustomers();
       const updated = useStore.getState().customers.find(c => c.id === data.customer_id);
       if (updated) store.setView('customer', updated);
