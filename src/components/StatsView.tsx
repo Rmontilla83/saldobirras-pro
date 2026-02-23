@@ -156,8 +156,11 @@ export default function StatsView({ onLoadTransactions }: Props) {
   }, [filtered]);
 
   const tooltipStyle = {
-    contentStyle: { background: '#101828', border: '1px solid rgba(200,155,40,0.15)', borderRadius: 12, fontSize: 11 },
-    labelStyle: { color: '#94A3B8' },
+    contentStyle: { background: '#0A1020', border: '1px solid rgba(200,155,40,0.2)', borderRadius: 12, fontSize: 11, padding: '10px 14px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' },
+    labelStyle: { color: '#94A3B8', marginBottom: 4 },
+    itemStyle: { color: '#E2E8F0', padding: '2px 0' },
+    cursor: { fill: 'rgba(200,155,40,0.06)' },
+    wrapperStyle: { zIndex: 100, outline: 'none' },
   };
 
   if (loading) {
@@ -261,10 +264,10 @@ export default function StatsView({ onLoadTransactions }: Props) {
             <div className="flex items-center gap-3">
               <ResponsiveContainer width="50%" height={200}>
                 <PieChart>
-                  <Pie data={paymentData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                  <Pie data={paymentData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={3} dataKey="value" nameKey="name" strokeWidth={0}>
                     {paymentData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                   </Pie>
-                  <Tooltip {...tooltipStyle} formatter={(v: number) => [`$${v.toFixed(2)}`, '']} />
+                  <Tooltip contentStyle={{ background: '#0A1020', border: '1px solid rgba(200,155,40,0.2)', borderRadius: 12, fontSize: 12, padding: '10px 14px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }} itemStyle={{ color: '#E2E8F0' }} formatter={(v: number, name: string) => [`$${v.toFixed(2)}`, name]} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex-1 space-y-1.5">
@@ -352,10 +355,10 @@ export default function StatsView({ onLoadTransactions }: Props) {
             <div className="flex items-center gap-3">
               <ResponsiveContainer width="50%" height={200}>
                 <PieChart>
-                  <Pie data={topProducts.map(p => ({ name: p.name, value: p.revenue }))} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                  <Pie data={topProducts.map(p => ({ name: p.name, value: p.revenue }))} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={3} dataKey="value" nameKey="name" strokeWidth={0}>
                     {topProducts.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                   </Pie>
-                  <Tooltip {...tooltipStyle} formatter={(v: number) => [`$${v.toFixed(2)}`, '']} />
+                  <Tooltip contentStyle={{ background: '#0A1020', border: '1px solid rgba(200,155,40,0.2)', borderRadius: 12, fontSize: 12, padding: '10px 14px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }} itemStyle={{ color: '#E2E8F0' }} formatter={(v: number, name: string) => [`$${v.toFixed(2)}`, name]} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex-1 space-y-1.5">

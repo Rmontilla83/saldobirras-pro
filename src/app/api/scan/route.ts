@@ -25,15 +25,6 @@ export async function POST(req: NextRequest) {
     return badRequest('Cliente no encontrado');
   }
 
-  // Insert scan event (triggers realtime for PC)
-  const { error: scanErr } = await supabase.from('scan_queue').insert({
-    business_id: user.business_id,
-    customer_id: customer.id,
-    scanned_by: user.id,
-  });
-
-  if (scanErr) return badRequest(scanErr.message);
-
   return ok(customer);
 }
 

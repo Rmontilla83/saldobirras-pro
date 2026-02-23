@@ -12,7 +12,7 @@ import CustomerView from '@/components/CustomerView';
 import TransactionsView from '@/components/TransactionsView';
 import StatsView from '@/components/StatsView';
 import ScanView from '@/components/ScanView';
-import ScanPopup from '@/components/ScanPopup';
+import OrdersView from '@/components/OrdersView'
 import UsersView from '@/components/UsersView';
 import ProductsView from '@/components/ProductsView';
 import OrdersView from '@/components/OrdersView';
@@ -85,29 +85,7 @@ export default function DashboardPage() {
 
   // Realtime: listen for scan events (PC receives phone scans)
   useEffect(() => {
-    if (!store.user || window.innerWidth <= 700) return;
-
-    const channel = supabase
-      .channel('scan-events')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'scan_queue',
-        filter: `business_id=eq.${store.user.business_id}`,
-      }, async (payload: any) => {
-        const customerId = payload.new.customer_id;
-        // Refresh customers to get latest balance
-        await loadCustomers();
-        const customer = useStore.getState().customers.find(c => c.id === customerId);
-        if (customer) {
-          store.setScanPopup(customer);
-          // Mark as processed
-          await supabase.from('scan_queue').update({ processed: true }).eq('id', payload.new.id);
-        }
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    // Scan queue removed — each cashier works independently on mobile
   }, [store.user]);
 
   // Auto-refresh: 15s on mobile, 30s on desktop
@@ -333,7 +311,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {store.scanPopup && <ScanPopup />}
+      {/* ScanPopup removed */}
       {toast && <Toast msg={toast.msg} type={toast.type} />}
     </>
   );
