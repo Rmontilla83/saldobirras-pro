@@ -117,7 +117,7 @@ export default function PortalPage() {
             <div className="text-right">
               <div className="text-[10px] text-slate-500">Saldo</div>
               <div className="text-sm font-bold text-amber tabular-nums">
-                {customer.balance_type === 'money' ? `$${customer.balance.toFixed(2)}` : `${customer.balance} 🍺`}
+                {customer.balance_type === 'money' ? `$${customer.balance.toFixed(2)}` : `${customer.available_balance} 🍺`}
               </div>
             </div>
           )}
@@ -259,14 +259,14 @@ export default function PortalPage() {
             </div>
 
             {/* Balance check */}
-            <div className={`rounded-2xl p-4 mb-4 border ${cartTotal <= customer.balance ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-red-500/5 border-red-500/10'}`}>
+            <div className={`rounded-2xl p-4 mb-4 border ${cartTotal <= customer.available_balance ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-red-500/5 border-red-500/10'}`}>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-slate-400">Tu saldo</span>
-                <span className={`text-sm font-bold ${cartTotal <= customer.balance ? 'text-emerald-400' : 'text-red-400'}`}>
-                  ${customer.balance.toFixed(2)}
+                <span className={`text-sm font-bold ${cartTotal <= customer.available_balance ? 'text-emerald-400' : 'text-red-400'}`}>
+                  ${customer.available_balance.toFixed(2)}
                 </span>
               </div>
-              {cartTotal > customer.balance && (
+              {cartTotal > customer.available_balance && (
                 <div className="text-xs text-red-400 mt-1">Saldo insuficiente. Recarga para poder hacer el pedido.</div>
               )}
             </div>
@@ -276,7 +276,7 @@ export default function PortalPage() {
 
             {error && <div className="text-red-400 text-sm mb-3">{error}</div>}
 
-            <button onClick={submitOrder} disabled={loading || cartTotal > customer.balance}
+            <button onClick={submitOrder} disabled={loading || cartTotal > customer.available_balance}
               className="w-full py-4 bg-amber text-black font-bold rounded-2xl text-sm flex items-center justify-center gap-2 disabled:opacity-40">
               {loading ? 'Enviando...' : <><Send size={16} /> Enviar Pedido</>}
             </button>

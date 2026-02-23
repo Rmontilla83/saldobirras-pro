@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
+import { rateLimit } from '@/lib/api-auth';
 
 // GET /api/portal?qr=SB-XXXX — public lookup
 export async function GET(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') || 'unknown';
+  if (!rateLimit(`portal:${ip}`, 20, 60000)) {
+    return NextResponse.json({ success: false, error: 'Demasiadas solicitudes' }, { status: 429 });
+  }
   const { searchParams } = new URL(req.url);
   const qr = searchParams.get('qr');
 
@@ -15,7 +20,7 @@ export async function GET(req: NextRequest) {
   // Find customer by QR
   const { data: customer, error } = await supabase
     .from('customers')
-    .select('id, name, balance, balance_type, qr_code, photo_url, business_id')
+    .select('id, name, balance, balance_held, balance_type, qr_code, photo_url, business_id, allow_negative')
     .eq('qr_code', qr)
     .single();
 
@@ -46,6 +51,8 @@ export async function GET(req: NextRequest) {
         id: customer.id,
         name: customer.name,
         balance: customer.balance,
+        balance_held: customer.balance_held || 0,
+        available_balance: customer.balance - (customer.balance_held || 0),
         balance_type: customer.balance_type,
         qr_code: customer.qr_code,
         photo_url: customer.photo_url,

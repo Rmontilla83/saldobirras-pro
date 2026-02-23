@@ -11,6 +11,7 @@ export default function EditCustomerModal({ customer, onSave, onClose }: Props) 
   const [name, setName] = useState(customer.name);
   const [email, setEmail] = useState(customer.email || '');
   const [phone, setPhone] = useState(customer.phone || '');
+  const [allowNegative, setAllowNegative] = useState((customer as any).allow_negative || false);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(customer.photo_url);
   const [loading, setLoading] = useState(false);
@@ -29,6 +30,7 @@ export default function EditCustomerModal({ customer, onSave, onClose }: Props) 
     formData.append('name', name.trim());
     formData.append('email', email.trim());
     formData.append('phone', phone.trim());
+    formData.append('allow_negative', String(allowNegative));
     if (photo) formData.append('photo', photo);
     await onSave(formData);
     setLoading(false);
@@ -65,6 +67,17 @@ export default function EditCustomerModal({ customer, onSave, onClose }: Props) 
           <div><label className="label">Nombre</label><input type="text" className="input" value={name} onChange={e=>setName(e.target.value)} /></div>
           <div><label className="label">Correo</label><input type="email" className="input" value={email} onChange={e=>setEmail(e.target.value)} placeholder="correo@ejemplo.com" /></div>
           <div><label className="label">Teléfono</label><input type="tel" className="input" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+58 412 ..." /></div>
+          <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.02] border border-white/[0.03]">
+            <button onClick={() => setAllowNegative(!allowNegative)}
+              className={`w-5 h-5 rounded flex items-center justify-center text-[10px] transition-all flex-shrink-0
+                ${allowNegative ? 'bg-amber/20 text-amber border border-amber/30' : 'bg-slate-800 border border-slate-700'}`}>
+              {allowNegative ? '✓' : ''}
+            </button>
+            <div>
+              <div className="text-xs text-white/80 font-medium">Permitir saldo negativo</div>
+              <div className="text-[10px] text-slate-500">El cliente puede consumir sin saldo (postpago)</div>
+            </div>
+          </div>
           <div className="flex gap-2.5 pt-1">
             <button onClick={onClose} className="btn-outline flex-1">Cancelar</button>
             <button onClick={handleSave} disabled={loading} className="btn-primary flex-1 flex items-center justify-center gap-1.5 disabled:opacity-50">

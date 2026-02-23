@@ -3,12 +3,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useStore } from '@/lib/store';
 import { formatMoney } from '@/lib/utils';
-import { DollarSign, ShoppingBag, Receipt, TrendingUp, Trophy, Crown, Clock, CreditCard, Users, ArrowUpRight, ArrowDownRight, Package } from 'lucide-react';
+import { DollarSign, ShoppingBag, Receipt, TrendingUp, Trophy, Crown, Clock, CreditCard, Users, ArrowUpRight, ArrowDownRight, Package, MapPin, Percent, Settings } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
   AreaChart, Area,
 } from 'recharts';
+import { createClient } from '@/lib/supabase-browser';
 import type { Transaction } from '@/lib/types';
 
 interface Props { onLoadTransactions: () => Promise<Transaction[]>; }
@@ -22,14 +23,33 @@ const CYAN = '#06B6D4';
 const PIE_COLORS = [GOLD, GREEN, BLUE, PURPLE, CYAN, RED, '#F59E0B', '#EC4899'];
 
 export default function StatsView({ onLoadTransactions }: Props) {
-  const { customers } = useStore();
+  const { customers, user } = useStore();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [period, setPeriod] = useState<'today' | '7d' | '30d' | '90d' | '365d'>('today');
   const [loading, setLoading] = useState(true);
+  const [taxPct, setTaxPct] = useState(15);
+  const [editingTax, setEditingTax] = useState(false);
+  const [taxInput, setTaxInput] = useState('15');
+  const [zones, setZones] = useState<{ id: string; name: string; color: string }[]>([]);
+  const isOwner = user?.role === 'owner';
 
   useEffect(() => {
     setLoading(true);
     onLoadTransactions().then(d => { setTransactions(d); setLoading(false); });
+    // Load settings and zones
+    const loadExtra = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const headers = { Authorization: `Bearer ${session.access_token}` };
+      const [settingsRes, zonesRes] = await Promise.all([
+        fetch('/api/settings', { headers }).then(r => r.json()),
+        fetch('/api/zones', { headers }).then(r => r.json()),
+      ]);
+      if (settingsRes?.success) { setTaxPct(settingsRes.data.tax_percentage || 15); setTaxInput(String(settingsRes.data.tax_percentage || 15)); }
+      if (zonesRes?.success) setZones(zonesRes.data);
+    };
+    loadExtra();
   }, []);
 
   const cutoff = period === 'today' 
@@ -349,6 +369,94 @@ export default function StatsView({ onLoadTransactions }: Props) {
               </div>
             </div>
           ) : <EmptyChart />}
+        </div>
+      </div>
+
+      {/* Tax + Zones Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        {/* Tax Percentage Card */}
+        <div className="card">
+          <ChartHeader icon={<Percent size={14} />} title="Porcentaje sobre Ventas" subtitle="Comisión aplicada a consumos" />
+          <div className="flex items-center gap-4">
+            <div className="text-center flex-1">
+              <div className="text-[40px] font-extrabold text-amber tabular-nums">{taxPct}%</div>
+              <div className="text-[10px] text-slate-500 mt-1">Sobre ventas del período</div>
+              <div className="text-lg font-bold text-emerald-400 mt-2">{formatMoney(totalConsume * taxPct / 100)}</div>
+              <div className="text-[10px] text-slate-500">de {formatMoney(totalConsume)} en consumos</div>
+            </div>
+            {isOwner && (
+              <div className="border-l border-white/[0.04] pl-4">
+                {editingTax ? (
+                  <div className="space-y-2">
+                    <input type="number" min="0" max="100" step="0.5" className="input text-sm w-20 text-center"
+                      value={taxInput} onChange={e => setTaxInput(e.target.value)} />
+                    <button onClick={async () => {
+                      const supabase = createClient();
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session) return;
+                      await fetch('/api/settings', {
+                        method: 'PUT',
+                        headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tax_percentage: taxInput }),
+                      });
+                      setTaxPct(parseFloat(taxInput) || 15);
+                      setEditingTax(false);
+                    }} className="btn-primary text-[10px] w-full py-1.5">Guardar</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setEditingTax(true)} className="btn-outline text-[10px] px-3 py-2 flex items-center gap-1">
+                    <Settings size={10} /> Cambiar %
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Zones Chart */}
+        <div className="card">
+          <ChartHeader icon={<MapPin size={14} />} title="Ventas por Zona" subtitle="Distribución en el stadium" />
+          {(() => {
+            // Build zone data from transactions that have zone_id
+            const zoneMap: Record<string, { name: string; color: string; total: number; count: number }> = {};
+            zones.forEach(z => { zoneMap[z.id] = { name: z.name, color: z.color, total: 0, count: 0 }; });
+            // Also check orders for zone data
+            consumes.forEach(t => {
+              const zid = (t as any).zone_id;
+              if (zid && zoneMap[zid]) {
+                zoneMap[zid].total += t.amount;
+                zoneMap[zid].count++;
+              }
+            });
+            const zoneData = Object.values(zoneMap).filter(z => z.total > 0 || z.count > 0);
+            const maxZone = zoneData.length > 0 ? Math.max(...zoneData.map(z => z.total)) : 1;
+
+            return zoneData.length > 0 ? (
+              <div className="space-y-3 mt-2">
+                {zoneData.sort((a, b) => b.total - a.total).map((z, i) => (
+                  <div key={z.name}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-sm" style={{ background: z.color }} />
+                        <span className="text-[11px] font-semibold text-white/85">{z.name}</span>
+                      </div>
+                      <span className="text-[11px] font-bold text-amber tabular-nums">{formatMoney(z.total)}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-white/[0.03] overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-700"
+                        style={{ width: `${(z.total / maxZone) * 100}%`, background: z.color }} />
+                    </div>
+                    <div className="text-[9px] text-slate-600 mt-0.5">{z.count} transacciones</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-600 text-xs">
+                <MapPin size={20} className="mx-auto mb-2 opacity-30" />
+                Sin datos de zona aún. Las zonas se registran con los pedidos.
+              </div>
+            );
+          })()}
         </div>
       </div>
 

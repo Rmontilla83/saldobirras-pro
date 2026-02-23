@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
-import { getAuthUser, unauthorized, badRequest, ok } from '@/lib/api-auth';
+import { getAuthUser, unauthorized, badRequest, ok, rateLimit, rateLimited } from '@/lib/api-auth';
 
 // GET /api/orders — list orders (authenticated)
 export async function GET(req: NextRequest) {
@@ -37,8 +37,11 @@ export async function GET(req: NextRequest) {
   return ok(orders);
 }
 
-// POST /api/orders — create order (public, from portal)
+// POST /api/orders — create order (public from portal OR authenticated from cashier)
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') || 'unknown';
+  if (!rateLimit(`orders:${ip}`, 10, 60000)) return rateLimited();
+
   const body = await req.json();
   const { customer_id, qr_code, items, note, zone_id } = body;
 
@@ -48,45 +51,65 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient();
 
-  // Find customer
-  let custId = customer_id;
-  if (!custId && qr_code) {
-    const { data: cust } = await supabase
+  // Resolve customer
+  let cust: any = null;
+  if (customer_id) {
+    const { data } = await supabase
       .from('customers')
-      .select('id, business_id, balance, balance_type')
+      .select('id, business_id, balance, balance_held, balance_type, allow_negative')
+      .eq('id', customer_id)
+      .single();
+    cust = data;
+  } else if (qr_code) {
+    const { data } = await supabase
+      .from('customers')
+      .select('id, business_id, balance, balance_held, balance_type, allow_negative')
       .eq('qr_code', qr_code)
       .single();
-    if (!cust) return badRequest('Cliente no encontrado');
-    custId = cust.id;
-
-    // Calculate total
-    const total = items.reduce((s: number, i: any) => s + (i.subtotal || i.price * i.qty), 0);
-
-    // Check balance
-    if (cust.balance < total) {
-      return badRequest(`Saldo insuficiente. Disponible: ${cust.balance_type === 'money' ? '$' : ''}${cust.balance}`);
-    }
-
-    // Create order
-    const { data: order, error } = await supabase
-      .from('orders')
-      .insert({
-        business_id: cust.business_id,
-        customer_id: custId,
-        items,
-        total,
-        status: 'pending',
-        zone_id: zone_id || null,
-        note: note || null,
-      })
-      .select()
-      .single();
-
-    if (error) return badRequest(error.message);
-    return ok(order);
+    cust = data;
   }
 
-  return badRequest('Datos incompletos');
+  if (!cust) return badRequest('Cliente no encontrado');
+
+  const total = items.reduce((s: number, i: any) => s + (i.subtotal || i.price * i.qty), 0);
+  const available = cust.balance - (cust.balance_held || 0);
+
+  // Check available balance (unless allow_negative)
+  if (available < total && !cust.allow_negative) {
+    return badRequest(`Saldo disponible insuficiente. Disponible: ${cust.balance_type === 'money' ? '$' : ''}${available.toFixed(2)}`);
+  }
+
+  // Hold balance
+  const { data: holdResult, error: holdErr } = await supabase.rpc('hold_balance', {
+    p_customer_id: cust.id,
+    p_amount: total,
+  });
+  if (holdErr) return badRequest(holdErr.message);
+  const hr = holdResult as any;
+  if (hr?.error) return badRequest(hr.error);
+
+  // Create order
+  const { data: order, error } = await supabase
+    .from('orders')
+    .insert({
+      business_id: cust.business_id,
+      customer_id: cust.id,
+      items,
+      total,
+      status: 'pending',
+      zone_id: zone_id || null,
+      note: note || null,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    // Release hold on failure
+    await supabase.rpc('release_hold', { p_customer_id: cust.id, p_amount: total });
+    return badRequest(error.message);
+  }
+
+  return ok(order);
 }
 
 // PUT /api/orders — update order status (authenticated)
@@ -99,15 +122,16 @@ export async function PUT(req: NextRequest) {
 
   const supabase = createAdminClient();
 
-  // If marking as delivered, process the consume
-  if (status === 'delivered') {
-    const { data: order } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('id', id)
-      .single();
+  const { data: order } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('id', id)
+    .single();
 
-    if (!order) return badRequest('Orden no encontrada');
+  if (!order) return badRequest('Orden no encontrada');
+
+  // If marking as delivered, process the consume and release hold
+  if (status === 'delivered') {
     if (order.status === 'delivered') return badRequest('Orden ya fue entregada');
 
     // Process consume
@@ -126,6 +150,14 @@ export async function PUT(req: NextRequest) {
     if (rpcResult.tx_id) {
       await supabase.from('transactions').update({ items: order.items }).eq('id', rpcResult.tx_id);
     }
+
+    // Release the hold
+    await supabase.rpc('release_hold', { p_customer_id: order.customer_id, p_amount: order.total });
+  }
+
+  // If cancelling, release the hold
+  if (status === 'cancelled' && order.status !== 'cancelled' && order.status !== 'delivered') {
+    await supabase.rpc('release_hold', { p_customer_id: order.customer_id, p_amount: order.total });
   }
 
   // Update order status

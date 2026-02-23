@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { formatBalance, formatMoney, formatDate, isLowBalance, BANKS } from '@/lib/utils';
-import { ArrowLeft, Pencil, Mail, QrCode, Minus, Plus, TrendingUp, TrendingDown, CreditCard, ShoppingCart, Trash2, Package, Link2, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Pencil, Mail, QrCode, Minus, Plus, TrendingUp, TrendingDown, CreditCard, ShoppingCart, Trash2, Package, Link2, ExternalLink, Send } from 'lucide-react';
 import Avatar from './Avatar';
 import StatusBadge from './StatusBadge';
 import EditCustomerModal from './EditCustomerModal';
@@ -97,6 +97,8 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
 
   const cartTotal = cartItems.reduce((s, i) => s + i.subtotal, 0);
   const cartCount = cartItems.reduce((s, i) => s + i.qty, 0);
+  const balanceHeld = (c as any).balance_held || 0;
+  const availableBalance = c.balance - balanceHeld;
 
   const handleConsumeProducts = async () => {
     if (cartItems.length === 0) return;
@@ -105,6 +107,28 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
     const note = items.map(i => `${i.qty}x ${i.name}`).join(', ');
     await onConsume({ customer_id: c.id, amount: cartTotal, note, items });
     clearCart();
+    setProcessing(false);
+  };
+
+  const handleSendToBar = async () => {
+    if (cartItems.length === 0) return;
+    setProcessing(true);
+    const items = cartItems.map(({ product, ...item }) => item);
+    const supabase = (await import('@/lib/supabase-browser')).createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setProcessing(false); return; }
+    const res = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customer_id: c.id, items }),
+    });
+    const json = await res.json();
+    if (json.success) {
+      clearCart();
+      alert('✓ Pedido enviado a la barra');
+    } else {
+      alert(json.error || 'Error al enviar pedido');
+    }
     setProcessing(false);
   };
 
@@ -171,6 +195,11 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                 <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${pct}%` }} />
               </div>
               <div className="mt-2.5"><StatusBadge customer={c} /></div>
+              {balanceHeld > 0 && (
+                <div className="mt-2 text-[10px] text-yellow-500">
+                  🔒 ${balanceHeld.toFixed(2)} retenido en pedidos · Disponible: ${availableBalance.toFixed(2)}
+                </div>
+              )}
             </div>
           </div>
 
@@ -266,6 +295,10 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                       className="btn-red w-full mt-2 py-3 text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50">
                       {processing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> :
                         <><ShoppingCart size={14} /> Cobrar ${cartTotal.toFixed(2)}</>}
+                    </button>
+                    <button onClick={handleSendToBar} disabled={processing}
+                      className="w-full mt-1.5 py-2.5 bg-blue-500/10 text-blue-400 rounded-xl text-[10px] font-semibold flex items-center justify-center gap-1.5 hover:bg-blue-500/20 transition-colors disabled:opacity-50">
+                      {processing ? '...' : <><Send size={12} /> Enviar a Barra</>}
                     </button>
                   </div>
                 )}

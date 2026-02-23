@@ -24,6 +24,8 @@ export async function PUT(req: NextRequest) {
     if (name) updates.name = name;
     if (email !== null) updates.email = email || null;
     if (phone !== null) updates.phone = phone || null;
+    const allowNeg = formData.get('allow_negative');
+    if (allowNeg !== null) updates.allow_negative = allowNeg === 'true';
 
     // Upload new photo if provided
     if (photoFile && photoFile.size > 0) {
