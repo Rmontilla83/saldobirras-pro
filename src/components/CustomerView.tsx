@@ -3,11 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { formatBalance, formatMoney, formatDate, isLowBalance, BANKS } from '@/lib/utils';
-import { ArrowLeft, Pencil, Mail, QrCode, Minus, Plus, TrendingUp, TrendingDown, CreditCard } from 'lucide-react';
+import { ArrowLeft, Pencil, Mail, QrCode, Minus, Plus, TrendingUp, TrendingDown, CreditCard, ShoppingCart, Trash2, Package } from 'lucide-react';
 import Avatar from './Avatar';
 import StatusBadge from './StatusBadge';
 import EditCustomerModal from './EditCustomerModal';
-import type { Transaction } from '@/lib/types';
+import { createClient } from '@/lib/supabase-browser';
+import type { Transaction, Product, OrderItem } from '@/lib/types';
+import { CATEGORY_LABELS } from '@/lib/types';
 
 interface Props {
   onRecharge: (data: any) => Promise<any>;
@@ -19,14 +21,21 @@ interface Props {
 
 export default function CustomerView({ onRecharge, onConsume, onLoadTransactions, onSendQREmail, onEditCustomer }: Props) {
   const { selectedCustomer: c, setView, user } = useStore();
-  const [consumeAmt, setConsumeAmt] = useState('');
-  const [consumeNote, setConsumeNote] = useState('');
   const [rechargeAmt, setRechargeAmt] = useState('');
   const [rechargeBank, setRechargeBank] = useState('');
   const [rechargeRef, setRechargeRef] = useState('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showEdit, setShowEdit] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
+
+  // Products & Cart
+  const [products, setProducts] = useState<Product[]>([]);
+  const [cart, setCart] = useState<Record<string, number>>({});
+  const [filterCat, setFilterCat] = useState('all');
+  const [consumeMode, setConsumeMode] = useState<'products' | 'manual'>('products');
+  const [manualAmt, setManualAmt] = useState('');
+  const [manualNote, setManualNote] = useState('');
+  const [processing, setProcessing] = useState(false);
 
   const isOwner = user?.role === 'owner';
   const can = (perm: string) => isOwner || (user?.permissions as any)?.[perm];
@@ -37,6 +46,21 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
   const low = isLowBalance(c.balance, c.balance_type) || c.balance <= 0;
 
   useEffect(() => { onLoadTransactions(c.id).then(setTransactions); }, [c.id, c.balance]);
+
+  // Load products
+  useEffect(() => {
+    const loadProducts = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch('/api/products', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const json = await res.json();
+      if (json.success) setProducts(json.data.filter((p: Product) => p.is_available));
+    };
+    loadProducts();
+  }, []);
 
   useEffect(() => {
     if (qrRef.current && typeof window !== 'undefined') {
@@ -50,22 +74,63 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
     }
   }, [c.qr_code]);
 
-  const handleConsume = async () => {
-    const amt = parseFloat(consumeAmt);
+  // Cart helpers
+  const addToCart = (productId: string) => {
+    setCart(prev => ({ ...prev, [productId]: (prev[productId] || 0) + 1 }));
+  };
+  const removeFromCart = (productId: string) => {
+    setCart(prev => {
+      const n = (prev[productId] || 0) - 1;
+      if (n <= 0) { const { [productId]: _, ...rest } = prev; return rest; }
+      return { ...prev, [productId]: n };
+    });
+  };
+  const clearCart = () => setCart({});
+
+  const cartItems: (OrderItem & { product: Product })[] = Object.entries(cart)
+    .map(([pid, qty]) => {
+      const product = products.find(p => p.id === pid);
+      if (!product) return null;
+      return { product_id: pid, product_name: product.name, qty, price: Number(product.price), subtotal: Number(product.price) * qty, product };
+    })
+    .filter(Boolean) as any;
+
+  const cartTotal = cartItems.reduce((s, i) => s + i.subtotal, 0);
+  const cartCount = cartItems.reduce((s, i) => s + i.qty, 0);
+
+  const handleConsumeProducts = async () => {
+    if (cartItems.length === 0) return;
+    setProcessing(true);
+    const items = cartItems.map(({ product, ...item }) => item);
+    const note = items.map(i => `${i.qty}x ${i.product_name}`).join(', ');
+    await onConsume({ customer_id: c.id, amount: cartTotal, note, items });
+    clearCart();
+    setProcessing(false);
+  };
+
+  const handleConsumeManual = async () => {
+    const amt = parseFloat(manualAmt);
     if (!amt || amt <= 0) return;
-    await onConsume({ customer_id: c.id, amount: amt, note: consumeNote || 'Consumo' });
-    setConsumeAmt(''); setConsumeNote('');
+    setProcessing(true);
+    await onConsume({ customer_id: c.id, amount: amt, note: manualNote || 'Consumo' });
+    setManualAmt(''); setManualNote('');
+    setProcessing(false);
   };
 
   const handleRecharge = async () => {
     const amt = parseFloat(rechargeAmt);
     if (!amt || amt <= 0) return;
+    setProcessing(true);
     await onRecharge({ customer_id: c.id, amount: amt, note: 'Recarga', bank: rechargeBank || undefined, reference: rechargeRef || undefined });
     setRechargeAmt(''); setRechargeBank(''); setRechargeRef('');
+    setProcessing(false);
   };
 
   const balColor = c.balance <= 0 ? 'text-red-400' : low ? 'text-yellow-500' : 'text-amber';
   const barColor = c.balance <= 0 ? 'bg-red-500' : low ? 'bg-yellow-500' : 'bg-gradient-to-r from-amber to-amber-dark';
+
+  const filteredProducts = filterCat === 'all' ? products : products.filter(p => p.category === filterCat);
+  const categories = ['all', ...Array.from(new Set(products.map(p => p.category)))];
 
   return (
     <div className="animate-[fadeIn_0.25s_ease]">
@@ -109,40 +174,134 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
             </div>
           </div>
 
-          {/* Actions — only show cards the user has permission for */}
-          <div className={`grid gap-3 ${can('consume') && can('recharge') ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            {can('consume') && (
-            <div className="card">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="icon-box" style={{background:'rgba(239,68,68,0.06)'}}><Minus size={15} className="text-red-400"/></div>
+          {/* ═══ CONSUME SECTION ═══ */}
+          {can('consume') && (
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="icon-box" style={{background:'rgba(239,68,68,0.06)'}}><ShoppingCart size={15} className="text-red-400"/></div>
                 <span className="text-xs font-bold text-white/80">Cobrar</span>
               </div>
-              <input type="number" min="0" className="input text-sm" value={consumeAmt} onChange={e => setConsumeAmt(e.target.value)} placeholder={c.balance_type === 'money' ? '0.00' : '1'} />
-              <input type="text" className="input text-sm mt-1.5" value={consumeNote} onChange={e => setConsumeNote(e.target.value)} placeholder="IPA, Stout, Lager..." />
-              <button onClick={handleConsume} className="btn-red w-full mt-2.5 py-2.5 text-[10px]">Descontar</button>
-            </div>
-            )}
-            {can('recharge') && (
-            <div className="card">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="icon-box" style={{background:'rgba(16,185,129,0.06)'}}><Plus size={15} className="text-emerald-400"/></div>
-                <span className="text-xs font-bold text-white/80">Recargar</span>
+              <div className="flex gap-0.5">
+                <button onClick={() => setConsumeMode('products')}
+                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border transition-all
+                    ${consumeMode === 'products' ? 'bg-amber/10 text-amber border-amber/20' : 'border-transparent text-slate-500'}`}>
+                  Productos
+                </button>
+                <button onClick={() => setConsumeMode('manual')}
+                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border transition-all
+                    ${consumeMode === 'manual' ? 'bg-amber/10 text-amber border-amber/20' : 'border-transparent text-slate-500'}`}>
+                  Manual
+                </button>
               </div>
-              <input type="number" min="0" className="input text-sm" value={rechargeAmt} onChange={e => setRechargeAmt(e.target.value)} placeholder={c.balance_type === 'money' ? '0.00' : '5'} />
-              <select className="input text-sm mt-1.5" value={rechargeBank} onChange={e => setRechargeBank(e.target.value)}>
-                <option value="">Método de pago</option>
-                {BANKS.map(b => <option key={b} value={b}>{b}</option>)}
-              </select>
-              <input type="text" className="input text-sm mt-1.5" value={rechargeRef} onChange={e => setRechargeRef(e.target.value)} placeholder="Referencia" />
-              <button onClick={handleRecharge} className="btn-green w-full mt-2.5 py-2.5 text-[10px]">Recargar</button>
             </div>
-            )}
-            {!can('consume') && !can('recharge') && (
-              <div className="card text-center py-8">
-                <div className="text-slate-600 text-sm">No tienes permisos para operar saldos</div>
-              </div>
+
+            {consumeMode === 'products' ? (
+              <>
+                {/* Category filter */}
+                <div className="flex gap-1 mb-3 flex-wrap">
+                  {categories.map(cat => (
+                    <button key={cat} onClick={() => setFilterCat(cat)}
+                      className={`px-2 py-1 rounded-md text-[9px] font-semibold border transition-all
+                        ${filterCat === cat ? 'bg-white/[0.05] text-white/80 border-white/10' : 'border-transparent text-slate-600 hover:text-slate-400'}`}>
+                      {cat === 'all' ? 'Todos' : CATEGORY_LABELS[cat as any] || cat}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Products grid */}
+                {products.length === 0 ? (
+                  <div className="text-center py-6 text-slate-600 text-xs">
+                    <Package size={20} className="mx-auto mb-2 opacity-30" />
+                    No hay productos. Crea productos desde el menú Productos.
+                  </div>
+                ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-[250px] overflow-y-auto pr-1">
+                  {filteredProducts.map(p => {
+                    const qty = cart[p.id] || 0;
+                    return (
+                      <div key={p.id} onClick={() => addToCart(p.id)}
+                        className={`relative px-3 py-2.5 rounded-xl border cursor-pointer transition-all select-none
+                          ${qty > 0 ? 'border-amber/20 bg-amber/[0.04]' : 'border-white/[0.03] hover:border-white/[0.06] hover:bg-white/[0.01]'}`}>
+                        <div className="text-[11px] font-semibold text-white/85 truncate">{p.name}</div>
+                        <div className="text-[10px] text-slate-500">${Number(p.price).toFixed(2)}</div>
+                        {qty > 0 && (
+                          <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber text-[9px] font-bold text-black flex items-center justify-center">
+                            {qty}
+                          </div>
+                        )}
+                        {qty > 0 && (
+                          <button onClick={(e) => { e.stopPropagation(); removeFromCart(p.id); }}
+                            className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-red-500/80 text-white flex items-center justify-center text-[8px]">
+                            −
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                )}
+
+                {/* Cart summary */}
+                {cartCount > 0 && (
+                  <div className="mt-3 pt-3 border-t border-white/[0.03]">
+                    <div className="space-y-1 mb-2.5">
+                      {cartItems.map(item => (
+                        <div key={item.product_id} className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-400">{item.qty}x {item.product_name}</span>
+                          <span className="text-white/70 font-semibold tabular-nums">${item.subtotal.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between py-2 border-t border-white/[0.05]">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-white/90">Total: ${cartTotal.toFixed(2)}</span>
+                        <span className="text-[10px] text-slate-500">({cartCount} items)</span>
+                      </div>
+                      <button onClick={clearCart} className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-1">
+                        <Trash2 size={10} /> Limpiar
+                      </button>
+                    </div>
+                    <button onClick={handleConsumeProducts} disabled={processing}
+                      className="btn-red w-full mt-2 py-3 text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50">
+                      {processing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> :
+                        <><ShoppingCart size={14} /> Cobrar ${cartTotal.toFixed(2)}</>}
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              /* Manual consume */
+              <>
+                <input type="number" min="0" className="input text-sm" value={manualAmt} onChange={e => setManualAmt(e.target.value)} placeholder={c.balance_type === 'money' ? '0.00' : '1'} />
+                <input type="text" className="input text-sm mt-1.5" value={manualNote} onChange={e => setManualNote(e.target.value)} placeholder="Descripción..." />
+                <button onClick={handleConsumeManual} disabled={processing}
+                  className="btn-red w-full mt-2.5 py-2.5 text-[10px] disabled:opacity-50">
+                  {processing ? 'Procesando...' : 'Descontar'}
+                </button>
+              </>
             )}
           </div>
+          )}
+
+          {/* ═══ RECHARGE SECTION ═══ */}
+          {can('recharge') && (
+          <div className="card">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="icon-box" style={{background:'rgba(16,185,129,0.06)'}}><Plus size={15} className="text-emerald-400"/></div>
+              <span className="text-xs font-bold text-white/80">Recargar</span>
+            </div>
+            <input type="number" min="0" className="input text-sm" value={rechargeAmt} onChange={e => setRechargeAmt(e.target.value)} placeholder={c.balance_type === 'money' ? '0.00' : '5'} />
+            <select className="input text-sm mt-1.5" value={rechargeBank} onChange={e => setRechargeBank(e.target.value)}>
+              <option value="">Método de pago</option>
+              {BANKS.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+            <input type="text" className="input text-sm mt-1.5" value={rechargeRef} onChange={e => setRechargeRef(e.target.value)} placeholder="Referencia" />
+            <button onClick={handleRecharge} disabled={processing} className="btn-green w-full mt-2.5 py-2.5 text-[10px] disabled:opacity-50">
+              {processing ? 'Procesando...' : 'Recargar'}
+            </button>
+          </div>
+          )}
         </div>
 
         {/* Right col: QR + history (2 cols) */}
@@ -185,7 +344,10 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                       </div>
                       <div>
                         <div className="font-medium text-xs text-white/80">{t.note}</div>
-                        <div className="text-[10px] text-slate-600">{formatDate(t.created_at)}</div>
+                        <div className="text-[10px] text-slate-600">
+                          {formatDate(t.created_at)}
+                          {t.cashier_name && <span className="ml-1 text-slate-700">· {t.cashier_name}</span>}
+                        </div>
                       </div>
                     </div>
                     <div className={`font-bold text-sm tabular-nums ${t.type === 'recharge' ? 'text-emerald-400' : 'text-red-400'}`}>

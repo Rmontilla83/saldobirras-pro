@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const supabase = createAdminClient();
   let query = supabase
     .from('transactions')
-    .select('*, customers(name)')
+    .select('*, customers(name), users(name)')
     .eq('business_id', user.business_id)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -29,7 +29,9 @@ export async function GET(req: NextRequest) {
   const transactions = data?.map((t: any) => ({
     ...t,
     customer_name: t.customers?.name,
+    cashier_name: t.users?.name,
     customers: undefined,
+    users: undefined,
   }));
 
   return ok(transactions);
@@ -41,7 +43,7 @@ export async function POST(req: NextRequest) {
   if (!user) return unauthorized();
 
   const body = await req.json();
-  const { customer_id, type, amount, note, bank, reference } = body;
+  const { customer_id, type, amount, note, bank, reference, items } = body;
 
   if (!customer_id || !type || !amount || amount <= 0) {
     return badRequest('customer_id, type y amount son requeridos');
@@ -99,6 +101,14 @@ export async function POST(req: NextRequest) {
     if (error) return badRequest(error.message);
     const result = data as any;
     if (result?.error) return badRequest(result.error);
+
+    // Store items in the transaction if provided
+    if (items && Array.isArray(items) && items.length > 0 && result.tx_id) {
+      await supabase
+        .from('transactions')
+        .update({ items })
+        .eq('id', result.tx_id);
+    }
 
     // Check balance and send alerts (async)
     const { data: customer } = await supabase
