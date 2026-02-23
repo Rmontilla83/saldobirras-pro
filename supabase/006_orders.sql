@@ -3,7 +3,7 @@
 -- Run this in Supabase SQL Editor
 -- ═══════════════════════════════════════════════════════════
 
-CREATE TYPE order_status AS ENUM ('pending', 'preparing', 'delivered', 'cancelled');
+CREATE TYPE order_status AS ENUM ('pending', 'preparing', 'ready', 'delivered', 'cancelled');
 
 CREATE TABLE orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

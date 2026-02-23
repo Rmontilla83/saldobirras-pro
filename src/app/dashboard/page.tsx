@@ -206,9 +206,10 @@ export default function DashboardPage() {
       const customer = useStore.getState().customers.find(c => c.id === res.data.id);
       if (customer) {
         showToast(`✓ ${customer.name}`);
-        // On mobile, notify PC via scan_queue
+        // On mobile, go directly to customer view AND notify PC
         if (window.innerWidth <= 700) {
-          await apiCall('/api/scan', 'POST', { qr_code });
+          store.setView('customer', customer);
+          apiCall('/api/scan', 'POST', { qr_code }).catch(() => {});
         } else {
           store.setView('customer', customer);
         }

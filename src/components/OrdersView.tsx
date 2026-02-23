@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase-browser';
-import { ClipboardList, Clock, ChefHat, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { useStore } from '@/lib/store';
+import { ClipboardList, Clock, ChefHat, CheckCircle, XCircle, RefreshCw, PackageCheck } from 'lucide-react';
 
 interface Order {
   id: string;
@@ -11,7 +12,7 @@ interface Order {
   customer_photo: string | null;
   items: { name: string; qty: number; price: number; subtotal: number }[];
   total: number;
-  status: 'pending' | 'preparing' | 'delivered' | 'cancelled';
+  status: 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
   zone_name: string | null;
   zone_color: string | null;
   note: string | null;
@@ -20,9 +21,10 @@ interface Order {
 
 interface Props { showToast: (msg: string, type: 'ok' | 'error' | 'warn') => void; }
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<string, any> = {
   pending: { label: 'Pendiente', icon: <Clock size={12} />, color: 'text-yellow-400', bg: 'bg-yellow-400/10', border: 'border-yellow-400/20' },
   preparing: { label: 'Preparando', icon: <ChefHat size={12} />, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20' },
+  ready: { label: 'Listo', icon: <PackageCheck size={12} />, color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20' },
   delivered: { label: 'Entregado', icon: <CheckCircle size={12} />, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
   cancelled: { label: 'Cancelado', icon: <XCircle size={12} />, color: 'text-red-400', bg: 'bg-red-400/10', border: 'border-red-400/20' },
 };
@@ -32,6 +34,8 @@ export default function OrdersView({ showToast }: Props) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('active');
   const supabase = createClient();
+  const { user } = useStore();
+  const isOwner = user?.role === 'owner';
 
   const load = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -62,12 +66,13 @@ export default function OrdersView({ showToast }: Props) {
   };
 
   const filtered = filter === 'active'
-    ? orders.filter(o => o.status === 'pending' || o.status === 'preparing')
+    ? orders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'ready')
     : filter === 'all' ? orders
     : orders.filter(o => o.status === filter);
 
   const pendingCount = orders.filter(o => o.status === 'pending').length;
   const preparingCount = orders.filter(o => o.status === 'preparing').length;
+  const readyCount = orders.filter(o => o.status === 'ready').length;
 
   const timeSince = (date: string) => {
     const mins = Math.floor((Date.now() - new Date(date).getTime()) / 60000);
@@ -85,9 +90,11 @@ export default function OrdersView({ showToast }: Props) {
             <h3 className="text-sm font-bold text-white/90">Pedidos</h3>
             <p className="text-[11px] text-slate-500">
               {pendingCount > 0 && <span className="text-yellow-400 font-semibold">{pendingCount} pendientes</span>}
-              {pendingCount > 0 && preparingCount > 0 && ' · '}
+              {pendingCount > 0 && (preparingCount > 0 || readyCount > 0) && ' · '}
               {preparingCount > 0 && <span className="text-blue-400 font-semibold">{preparingCount} preparando</span>}
-              {pendingCount === 0 && preparingCount === 0 && 'Sin pedidos activos'}
+              {preparingCount > 0 && readyCount > 0 && ' · '}
+              {readyCount > 0 && <span className="text-purple-400 font-semibold">{readyCount} listos</span>}
+              {pendingCount === 0 && preparingCount === 0 && readyCount === 0 && 'Sin pedidos activos'}
             </p>
           </div>
         </div>
@@ -99,9 +106,10 @@ export default function OrdersView({ showToast }: Props) {
       {/* Filter */}
       <div className="flex gap-1 mb-4">
         {[
-          { key: 'active', label: `Activos (${pendingCount + preparingCount})` },
+          { key: 'active', label: `Activos (${pendingCount + preparingCount + readyCount})` },
           { key: 'pending', label: `Pendientes (${pendingCount})` },
           { key: 'preparing', label: `Preparando (${preparingCount})` },
+          { key: 'ready', label: `Listos (${readyCount})` },
           { key: 'delivered', label: 'Entregados' },
           { key: 'all', label: 'Todos' },
         ].map(f => (
@@ -161,8 +169,8 @@ export default function OrdersView({ showToast }: Props) {
 
                 {order.note && <div className="text-[10px] text-slate-500 italic mb-3">"{order.note}"</div>}
 
-                {/* Actions */}
-                {order.status === 'pending' && (
+                {/* Actions — Barra/Owner: pending→preparing→ready, Cajera: ready→delivered */}
+                {order.status === 'pending' && isOwner && (
                   <div className="flex gap-2">
                     <button onClick={() => updateStatus(order.id, 'preparing')}
                       className="flex-1 py-2.5 bg-blue-500/10 text-blue-400 rounded-xl text-[10px] font-semibold flex items-center justify-center gap-1 hover:bg-blue-500/20 transition-colors">
@@ -174,7 +182,13 @@ export default function OrdersView({ showToast }: Props) {
                     </button>
                   </div>
                 )}
-                {order.status === 'preparing' && (
+                {order.status === 'preparing' && isOwner && (
+                  <button onClick={() => updateStatus(order.id, 'ready')}
+                    className="w-full py-2.5 bg-purple-500/10 text-purple-400 rounded-xl text-[10px] font-semibold flex items-center justify-center gap-1 hover:bg-purple-500/20 transition-colors">
+                    <PackageCheck size={12} /> Marcar Listo para Entrega
+                  </button>
+                )}
+                {order.status === 'ready' && (
                   <button onClick={() => updateStatus(order.id, 'delivered')}
                     className="w-full py-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl text-[10px] font-semibold flex items-center justify-center gap-1 hover:bg-emerald-500/20 transition-colors">
                     <CheckCircle size={12} /> Marcar Entregado
