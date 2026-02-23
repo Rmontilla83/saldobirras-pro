@@ -47,6 +47,25 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
 
   useEffect(() => { onLoadTransactions(c.id).then(setTransactions); }, [c.id, c.balance]);
 
+  // Auto-refresh customer data every 8s to catch order deliveries
+  useEffect(() => {
+    const refreshCustomer = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch(`/api/customers?id=${c.id}`, { headers: { Authorization: `Bearer ${session.access_token}` } });
+      const json = await res.json();
+      if (json.success && json.data) {
+        const updated = Array.isArray(json.data) ? json.data.find((cu: any) => cu.id === c.id) : json.data;
+        if (updated && (updated.balance !== c.balance || updated.balance_held !== (c as any).balance_held)) {
+          useStore.getState().setView('customer', updated);
+        }
+      }
+    };
+    const iv = setInterval(refreshCustomer, 8000);
+    return () => clearInterval(iv);
+  }, [c.id, c.balance]);
+
   // Load products
   useEffect(() => {
     const loadProducts = async () => {
@@ -208,20 +227,22 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="icon-box" style={{background:'rgba(239,68,68,0.06)'}}><ShoppingCart size={15} className="text-red-400"/></div>
-                <span className="text-xs font-bold text-white/80">Cobrar</span>
+                <div className="icon-box" style={{background:'rgba(239,68,68,0.06)'}}><ShoppingCart size={isMobile ? 18 : 15} className="text-red-400"/></div>
+                <span className={`${isMobile ? 'text-sm' : 'text-xs'} font-bold text-white/80`}>Cobrar</span>
               </div>
               <div className="flex gap-0.5">
                 <button onClick={() => setConsumeMode('products')}
-                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border transition-all
+                  className={`${isMobile ? 'px-4 py-2.5 text-[13px]' : 'px-2.5 py-1.5 text-[10px]'} rounded-lg font-semibold border transition-all
                     ${consumeMode === 'products' ? 'bg-amber/10 text-amber border-amber/20' : 'border-transparent text-slate-500'}`}>
                   Productos
                 </button>
+                {isOwner && (
                 <button onClick={() => setConsumeMode('manual')}
-                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border transition-all
+                  className={`${isMobile ? 'px-4 py-2.5 text-[13px]' : 'px-2.5 py-1.5 text-[10px]'} rounded-lg font-semibold border transition-all
                     ${consumeMode === 'manual' ? 'bg-amber/10 text-amber border-amber/20' : 'border-transparent text-slate-500'}`}>
                   Manual
                 </button>
+                )}
               </div>
             </div>
 
@@ -231,7 +252,7 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                 <div className="flex gap-1 mb-3 flex-wrap">
                   {categories.map(cat => (
                     <button key={cat} onClick={() => setFilterCat(cat)}
-                      className={`px-2 py-1 rounded-md text-[9px] font-semibold border transition-all
+                      className={`${isMobile ? 'px-3 py-2 text-[12px]' : 'px-2 py-1 text-[9px]'} rounded-md font-semibold border transition-all
                         ${filterCat === cat ? 'bg-white/[0.05] text-white/80 border-white/10' : 'border-transparent text-slate-600 hover:text-slate-400'}`}>
                       {cat === 'all' ? 'Todos' : CATEGORY_LABELS[cat as ProductCategory] || cat}
                     </button>
@@ -245,23 +266,23 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                     No hay productos. Crea productos desde el menú Productos.
                   </div>
                 ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-[250px] overflow-y-auto pr-1">
+                <div className={`grid ${isMobile ? 'grid-cols-2 gap-2.5' : 'grid-cols-2 sm:grid-cols-3 gap-1.5'} max-h-[350px] overflow-y-auto pr-1`}>
                   {filteredProducts.map(p => {
                     const qty = cart[p.id] || 0;
                     return (
                       <div key={p.id} onClick={() => addToCart(p.id)}
-                        className={`relative px-3 py-2.5 rounded-xl border cursor-pointer transition-all select-none
+                        className={`relative ${isMobile ? 'px-4 py-4' : 'px-3 py-2.5'} rounded-xl border cursor-pointer transition-all select-none
                           ${qty > 0 ? 'border-amber/20 bg-amber/[0.04]' : 'border-white/[0.03] hover:border-white/[0.06] hover:bg-white/[0.01]'}`}>
-                        <div className="text-[11px] font-semibold text-white/85 truncate">{p.name}</div>
-                        <div className="text-[10px] text-slate-500">${Number(p.price).toFixed(2)}</div>
+                        <div className={`${isMobile ? 'text-[15px]' : 'text-[11px]'} font-semibold text-white/85 truncate`}>{p.name}</div>
+                        <div className={`${isMobile ? 'text-[14px] mt-1' : 'text-[10px]'} text-amber font-bold`}>${Number(p.price).toFixed(2)}</div>
                         {qty > 0 && (
-                          <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber text-[9px] font-bold text-black flex items-center justify-center">
+                          <div className={`absolute ${isMobile ? '-top-2.5 -right-2.5 w-7 h-7 text-[13px]' : '-top-1.5 -right-1.5 w-5 h-5 text-[9px]'} rounded-full bg-amber font-bold text-black flex items-center justify-center`}>
                             {qty}
                           </div>
                         )}
                         {qty > 0 && (
                           <button onClick={(e) => { e.stopPropagation(); removeFromCart(p.id); }}
-                            className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-red-500/80 text-white flex items-center justify-center text-[8px]">
+                            className={`absolute ${isMobile ? '-bottom-1.5 -right-1.5 w-6 h-6 text-[11px]' : '-bottom-1 -right-1 w-4 h-4 text-[8px]'} rounded-full bg-red-500/80 text-white flex items-center justify-center`}>
                             −
                           </button>
                         )}
@@ -276,19 +297,19 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                   <div className="mt-3 pt-3 border-t border-white/[0.03]">
                     <div className="space-y-1 mb-2.5">
                       {cartItems.map(item => (
-                        <div key={item.product_id} className="flex items-center justify-between text-[11px]">
+                        <div key={item.product_id} className={`flex items-center justify-between ${isMobile ? 'text-[14px] py-1' : 'text-[11px]'}`}>
                           <span className="text-slate-400">{item.qty}x {item.name}</span>
                           <span className="text-white/70 font-semibold tabular-nums">${item.subtotal.toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
-                    <div className="flex items-center justify-between py-2 border-t border-white/[0.05]">
+                    <div className={`flex items-center justify-between ${isMobile ? 'py-3' : 'py-2'} border-t border-white/[0.05]`}>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-white/90">Total: ${cartTotal.toFixed(2)}</span>
-                        <span className="text-[10px] text-slate-500">({cartCount} items)</span>
+                        <span className={`${isMobile ? 'text-base' : 'text-xs'} font-bold text-white/90`}>Total: ${cartTotal.toFixed(2)}</span>
+                        <span className={`${isMobile ? 'text-[12px]' : 'text-[10px]'} text-slate-500`}>({cartCount} items)</span>
                       </div>
-                      <button onClick={clearCart} className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-1">
-                        <Trash2 size={10} /> Limpiar
+                      <button onClick={clearCart} className={`${isMobile ? 'text-[13px] px-3 py-1.5' : 'text-[10px]'} text-red-400 hover:text-red-300 flex items-center gap-1`}>
+                        <Trash2 size={isMobile ? 14 : 10} /> Limpiar
                       </button>
                     </div>
                     <button onClick={handleConsumeProducts} disabled={processing}
