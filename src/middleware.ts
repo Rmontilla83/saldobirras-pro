@@ -6,21 +6,16 @@ export function middleware(req: NextRequest) {
 
   // portal.birrasport.com → serve /portal routes
   if (host.startsWith('portal.')) {
-    // If accessing root, redirect to /portal
     if (pathname === '/') {
       return NextResponse.rewrite(new URL('/portal', req.url));
     }
-    // Block access to admin routes from portal subdomain
     if (pathname.startsWith('/dashboard') || pathname.startsWith('/login')) {
       return NextResponse.redirect(new URL('/portal', req.url));
     }
   }
 
-  // app.birrasport.com or birrasport.com → normal app behavior
-  // Redirect birrasport.com root to app.birrasport.com
-  if (host === 'birrasport.com' || host === 'www.birrasport.com') {
-    return NextResponse.redirect(new URL(`https://app.birrasport.com${pathname}`, req.url), 301);
-  }
+  // Let Vercel handle birrasport.com → www redirect via dashboard config
+  // No middleware redirect needed for app.birrasport.com — it's the default
 
   return NextResponse.next();
 }
