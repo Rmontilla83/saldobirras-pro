@@ -6,7 +6,7 @@ import { ShoppingCart, Plus, Minus, Send, ArrowLeft, Beer, Wine, Coffee, Utensil
 interface Product { id: string; name: string; description: string | null; category: string; price: number; is_available: boolean; }
 interface Zone { id: string; name: string; color: string; }
 interface CartItem { product: Product; qty: number; }
-interface CustomerInfo { id: string; name: string; balance: number; balance_type: string; qr_code: string; photo_url: string | null; }
+interface CustomerInfo { id: string; name: string; balance: number; balance_held: number; available_balance: number; balance_type: string; qr_code: string; photo_url: string | null; }
 
 const CAT_ICONS: Record<string, any> = {
   beer: <Beer size={16} />, cocktail: <Wine size={16} />, spirit: <Wine size={16} />,
@@ -117,7 +117,7 @@ export default function PortalPage() {
             <div className="text-right">
               <div className="text-[10px] text-slate-500">Saldo</div>
               <div className="text-sm font-bold text-amber tabular-nums">
-                {customer.balance_type === 'money' ? `$${customer.balance.toFixed(2)}` : `${customer.available_balance} 🍺`}
+                {customer.balance_type === 'money' ? `$${customer.balance.toFixed(2)}` : `${customer.balance} 🍺`}
               </div>
             </div>
           )}
