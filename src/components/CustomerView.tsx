@@ -8,7 +8,7 @@ import Avatar from './Avatar';
 import StatusBadge from './StatusBadge';
 import EditCustomerModal from './EditCustomerModal';
 import { createClient } from '@/lib/supabase-browser';
-import type { Transaction, Product, OrderItem } from '@/lib/types';
+import type { Transaction, Product, OrderItem, ProductCategory } from '@/lib/types';
 import { CATEGORY_LABELS } from '@/lib/types';
 
 interface Props {
@@ -204,7 +204,7 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                     <button key={cat} onClick={() => setFilterCat(cat)}
                       className={`px-2 py-1 rounded-md text-[9px] font-semibold border transition-all
                         ${filterCat === cat ? 'bg-white/[0.05] text-white/80 border-white/10' : 'border-transparent text-slate-600 hover:text-slate-400'}`}>
-                      {cat === 'all' ? 'Todos' : CATEGORY_LABELS[cat as any] || cat}
+                      {cat === 'all' ? 'Todos' : CATEGORY_LABELS[cat as ProductCategory] || cat}
                     </button>
                   ))}
                 </div>
