@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { formatBalance, formatMoney, formatDate, isLowBalance, BANKS } from '@/lib/utils';
-import { ArrowLeft, Pencil, Mail, QrCode, Minus, Plus, TrendingUp, TrendingDown, CreditCard, ShoppingCart, Trash2, Package } from 'lucide-react';
+import { ArrowLeft, Pencil, Mail, QrCode, Minus, Plus, TrendingUp, TrendingDown, CreditCard, ShoppingCart, Trash2, Package, Link2, ExternalLink } from 'lucide-react';
 import Avatar from './Avatar';
 import StatusBadge from './StatusBadge';
 import EditCustomerModal from './EditCustomerModal';
@@ -328,6 +328,36 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
             }} className="btn-outline mt-2 text-[10px] px-3 py-2 flex items-center gap-1.5 mx-auto">
               <CreditCard size={12}/> Imprimir Carnet
             </button>
+
+            {/* Portal link */}
+            <div className="mt-4 pt-3 border-t border-white/[0.03]">
+              <div className="text-[9px] text-slate-600 uppercase tracking-wider font-semibold text-center mb-2">Portal de Pedidos</div>
+              <button onClick={() => {
+                const url = `${window.location.origin}/portal?qr=${c.qr_code}`;
+                navigator.clipboard.writeText(url);
+                alert('Link copiado al portapapeles');
+              }} className="btn-outline w-full text-[10px] px-3 py-2 flex items-center justify-center gap-1.5">
+                <Link2 size={12}/> Copiar Link del Portal
+              </button>
+              {c.email && can('send_email') && (
+                <button onClick={async () => {
+                  const url = `${window.location.origin}/portal?qr=${c.qr_code}`;
+                  const supabase = (await import('@/lib/supabase-browser')).createClient();
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session) return;
+                  const res = await fetch('/api/portal/invite', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ customer_id: c.id, portal_url: url }),
+                  });
+                  const json = await res.json();
+                  if (json.success) alert('✓ Invitación enviada por correo');
+                  else alert(json.error || 'Error al enviar');
+                }} className="btn-outline w-full mt-1.5 text-[10px] px-3 py-2 flex items-center justify-center gap-1.5">
+                  <ExternalLink size={12}/> Enviar Invitación por Correo
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="card max-h-[340px] overflow-y-auto">
