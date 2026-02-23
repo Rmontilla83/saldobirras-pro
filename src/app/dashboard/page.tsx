@@ -15,6 +15,7 @@ import ScanView from '@/components/ScanView';
 import ScanPopup from '@/components/ScanPopup';
 import UsersView from '@/components/UsersView';
 import ProductsView from '@/components/ProductsView';
+import OrdersView from '@/components/OrdersView';
 import Toast from '@/components/Toast';
 
 export default function DashboardPage() {
@@ -321,6 +322,9 @@ export default function DashboardPage() {
         )}
         {store.view === 'products' && store.user?.role === 'owner' && (
           <ProductsView showToast={showToast} />
+        )}
+        {store.view === 'orders' && (
+          <OrdersView showToast={showToast} />
         )}
       </div>
 

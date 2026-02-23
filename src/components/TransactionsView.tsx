@@ -80,7 +80,7 @@ export default function TransactionsView({ onLoadTransactions }: Props) {
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-white/[0.04]">
-                  {['Fecha','Cliente','Tipo','Monto','Método','Ref','Detalle'].map(h => (
+                  {['Fecha','Cliente','Cajero','Tipo','Monto','Método','Ref','Detalle'].map(h => (
                     <th key={h} className="text-left px-3 py-2.5 text-slate-600 font-semibold text-[9px] uppercase tracking-[1px]">{h}</th>
                   ))}
                 </tr>
@@ -90,6 +90,7 @@ export default function TransactionsView({ onLoadTransactions }: Props) {
                   <tr key={t.id} className="border-b border-white/[0.015] cursor-pointer hover:bg-white/[0.01] transition-colors" onClick={() => { const cc = customers.find(c => c.id === t.customer_id); if(cc) setView('customer', cc); }}>
                     <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{formatDate(t.created_at)}</td>
                     <td className="px-3 py-2.5 font-medium text-white/80">{t.customer_name||'—'}</td>
+                    <td className="px-3 py-2.5 text-slate-500">{t.cashier_name||'—'}</td>
                     <td className="px-3 py-2.5">
                       <span className={`inline-flex items-center gap-1 ${t.type==='recharge' ? 'text-emerald-400' : 'text-red-400'}`}>
                         {t.type==='recharge' ? <TrendingUp size={11}/> : <TrendingDown size={11}/>}

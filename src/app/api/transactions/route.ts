@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const supabase = createAdminClient();
   let query = supabase
     .from('transactions')
-    .select('*, customers(name), users(name)')
+    .select('*, customers!customer_id(name), cashier:users!cashier_id(name)')
     .eq('business_id', user.business_id)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -29,9 +29,9 @@ export async function GET(req: NextRequest) {
   const transactions = data?.map((t: any) => ({
     ...t,
     customer_name: t.customers?.name,
-    cashier_name: t.users?.name,
+    cashier_name: t.cashier?.name,
     customers: undefined,
-    users: undefined,
+    cashier: undefined,
   }));
 
   return ok(transactions);

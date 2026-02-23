@@ -1,7 +1,7 @@
 'use client';
 
 import { useStore } from '@/lib/store';
-import { LayoutDashboard, UserPlus, ArrowLeftRight, BarChart3, RefreshCw, ScanLine, Users, Smartphone, Monitor, ShieldCheck, LogOut, Package } from 'lucide-react';
+import { LayoutDashboard, UserPlus, ArrowLeftRight, BarChart3, RefreshCw, ScanLine, Users, Smartphone, Monitor, ShieldCheck, LogOut, Package, ClipboardList } from 'lucide-react';
 
 interface HeaderProps { onRefresh: () => void; onLogout: () => void; }
 
@@ -53,6 +53,7 @@ export default function Header({ onRefresh, onLogout }: HeaderProps) {
               {can('dashboard') && <NavBtn icon={<LayoutDashboard size={14}/>} active={view==='dashboard'} onClick={()=>setView('dashboard')}>Panel</NavBtn>}
               {can('register') && <NavBtn icon={<UserPlus size={14}/>} active={view==='register'} onClick={()=>setView('register')}>Registrar</NavBtn>}
               {can('transactions') && <NavBtn icon={<ArrowLeftRight size={14}/>} active={view==='transactions'} onClick={()=>setView('transactions')}>Movimientos</NavBtn>}
+              {can('consume') && <NavBtn icon={<ClipboardList size={14}/>} active={view==='orders'} onClick={()=>setView('orders')}>Pedidos</NavBtn>}
               {can('stats') && <NavBtn icon={<BarChart3 size={14}/>} active={view==='stats'} onClick={()=>setView('stats')}>Informes</NavBtn>}
               {isOwner && <NavBtn icon={<Package size={14}/>} active={view==='products'} onClick={()=>setView('products')}>Productos</NavBtn>}
               {isOwner && <NavBtn icon={<ShieldCheck size={14}/>} active={view==='users'} onClick={()=>setView('users')}>Usuarios</NavBtn>}

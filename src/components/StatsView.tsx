@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useStore } from '@/lib/store';
 import { formatMoney } from '@/lib/utils';
-import { DollarSign, ShoppingBag, Receipt, TrendingUp, Trophy, Crown, Clock, CreditCard, Users, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { DollarSign, ShoppingBag, Receipt, TrendingUp, Trophy, Crown, Clock, CreditCard, Users, ArrowUpRight, ArrowDownRight, Package } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
@@ -98,6 +98,24 @@ export default function StatsView({ onLoadTransactions }: Props) {
   }, [filtered]);
 
   const maxTopAmount = topCustomers.length > 0 ? topCustomers[0].total : 1;
+
+  // ─── Top products ───
+  const topProducts = useMemo(() => {
+    const map: Record<string, { name: string; qty: number; revenue: number }> = {};
+    consumes.forEach(t => {
+      if (t.items && Array.isArray(t.items) && t.items.length > 0) {
+        t.items.forEach((item: any) => {
+          const key = item.product_id || item.name;
+          if (!map[key]) map[key] = { name: item.name, qty: 0, revenue: 0 };
+          map[key].qty += item.qty || 1;
+          map[key].revenue += item.subtotal || item.price || 0;
+        });
+      }
+    });
+    return Object.values(map).sort((a, b) => b.qty - a.qty).slice(0, 8);
+  }, [filtered]);
+
+  const maxProductQty = topProducts.length > 0 ? topProducts[0].qty : 1;
 
   // ─── Cumulative trend ───
   const cumulativeData = useMemo(() => {
@@ -269,6 +287,66 @@ export default function StatsView({ onLoadTransactions }: Props) {
                   </div>
                 </div>
               ))}
+            </div>
+          ) : <EmptyChart />}
+        </div>
+      </div>
+
+      {/* Charts Row 3 — Top Products */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        {/* Top Products Bar Chart */}
+        <div className="card">
+          <ChartHeader icon={<Package size={14} />} title="Top Productos" subtitle="Más vendidos por cantidad" />
+          {topProducts.length > 0 ? (
+            <div className="space-y-2 mt-2">
+              {topProducts.map((p, i) => (
+                <div key={i} className="flex items-center gap-2.5">
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-extrabold flex-shrink-0
+                    ${i === 0 ? 'bg-gradient-to-br from-yellow-400 to-orange-400 text-black' :
+                      i === 1 ? 'bg-slate-400/15 text-slate-300' :
+                      i === 2 ? 'bg-amber-700/15 text-amber-600' :
+                      'bg-white/[0.03] text-slate-500'}`}>
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-[11px] font-semibold text-white/85 truncate">{p.name}</span>
+                      <span className="text-[11px] font-bold text-amber tabular-nums ml-2">{p.qty} uds</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-white/[0.03] overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-700"
+                        style={{ width: `${(p.qty / maxProductQty) * 100}%`, background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                    </div>
+                    <div className="text-[9px] text-slate-600 mt-0.5">{formatMoney(p.revenue)} en ventas · ${(p.revenue / p.qty).toFixed(2)} c/u</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : <EmptyChart />}
+        </div>
+
+        {/* Products Pie Chart by Revenue */}
+        <div className="card">
+          <ChartHeader icon={<ShoppingBag size={14} />} title="Ventas por Producto" subtitle="Distribución de ingresos" />
+          {topProducts.length > 0 ? (
+            <div className="flex items-center gap-3">
+              <ResponsiveContainer width="50%" height={200}>
+                <PieChart>
+                  <Pie data={topProducts.map(p => ({ name: p.name, value: p.revenue }))} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                    {topProducts.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip {...tooltipStyle} formatter={(v: number) => [`$${v.toFixed(2)}`, '']} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex-1 space-y-1.5">
+                {topProducts.map((p, i) => (
+                  <div key={p.name} className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                    <span className="text-[10px] text-slate-400 flex-1 truncate">{p.name}</span>
+                    <span className="text-[10px] text-white/80 font-semibold tabular-nums">${p.revenue.toFixed(0)}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : <EmptyChart />}
         </div>

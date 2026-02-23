@@ -14,7 +14,7 @@ interface AppState {
   updateCustomer: (customer: Customer) => void;
 
   // UI
-  view: 'dashboard' | 'register' | 'customer' | 'transactions' | 'stats' | 'scan' | 'settings' | 'users' | 'products';
+  view: 'dashboard' | 'register' | 'customer' | 'transactions' | 'stats' | 'scan' | 'settings' | 'users' | 'products' | 'orders';
   selectedCustomer: Customer | null;
   scanPopup: Customer | null;
   search: string;
