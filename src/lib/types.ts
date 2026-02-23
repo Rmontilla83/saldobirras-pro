@@ -1,6 +1,49 @@
 export type BalanceType = 'money' | 'beers';
 export type TxType = 'recharge' | 'consume';
 export type UserRole = 'owner' | 'cashier' | 'auditor';
+export type ProductCategory = 'beer' | 'cocktail' | 'spirit' | 'soft_drink' | 'food' | 'other';
+export type VenueZone = 'general' | 'zone_a' | 'zone_b' | 'zone_c' | 'zone_d' | 'vip' | 'barra';
+
+export const ZONE_LABELS: Record<VenueZone, string> = {
+  general: 'General',
+  zone_a: 'Zona A',
+  zone_b: 'Zona B',
+  zone_c: 'Zona C',
+  zone_d: 'Zona D',
+  vip: 'VIP',
+  barra: 'Barra',
+};
+
+export const CATEGORY_LABELS: Record<ProductCategory, string> = {
+  beer: 'Cerveza',
+  cocktail: 'Cóctel',
+  spirit: 'Licor',
+  soft_drink: 'Sin Alcohol',
+  food: 'Comida',
+  other: 'Otro',
+};
+
+export interface Product {
+  id: string;
+  business_id: string;
+  name: string;
+  description: string | null;
+  category: ProductCategory;
+  price: number;
+  image_url: string | null;
+  is_available: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrderItem {
+  product_id: string;
+  name: string;
+  qty: number;
+  price: number;
+  subtotal: number;
+}
 
 export interface Business {
   id: string;
@@ -35,6 +78,17 @@ export interface User {
   created_at: string;
 }
 
+export interface Zone {
+  id: string;
+  business_id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
 export interface Customer {
   id: string;
   business_id: string;
@@ -47,6 +101,8 @@ export interface Customer {
   initial_balance: number;
   qr_code: string;
   is_active: boolean;
+  zone_id: string | null;
+  allow_negative: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -62,6 +118,7 @@ export interface Transaction {
   note: string | null;
   bank: string | null;
   reference: string | null;
+  items: OrderItem[];
   created_at: string;
   // Joined fields
   customer_name?: string;

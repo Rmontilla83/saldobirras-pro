@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
   const contentType = req.headers.get('content-type') || '';
   let name: string, email: string | undefined, phone: string | undefined;
   let balance_type: string, initial_balance: number;
+  let zone: string = 'general';
   let photoFile: File | null = null;
 
   if (contentType.includes('multipart/form-data')) {
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
     phone = (formData.get('phone') as string) || undefined;
     balance_type = formData.get('balance_type') as string;
     initial_balance = parseFloat(formData.get('initial_balance') as string);
+    zone = (formData.get('zone') as string) || 'general';
     photoFile = formData.get('photo') as File | null;
   } else {
     const body = await req.json();
@@ -46,6 +48,7 @@ export async function POST(req: NextRequest) {
     phone = body.phone;
     balance_type = body.balance_type;
     initial_balance = body.initial_balance;
+    zone = body.zone || 'general';
   }
 
   if (!name || !balance_type || initial_balance == null) {
@@ -85,6 +88,7 @@ export async function POST(req: NextRequest) {
       balance: initial_balance,
       initial_balance,
       qr_code,
+      zone,
     })
     .select()
     .single();

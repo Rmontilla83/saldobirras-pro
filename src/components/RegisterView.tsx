@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Camera, UserPlus } from 'lucide-react';
-import type { BalanceType } from '@/lib/types';
+import type { BalanceType, VenueZone } from '@/lib/types';
+import { ZONE_LABELS } from '@/lib/types';
 
 interface Props { onSubmit: (data: any) => Promise<any>; }
 
@@ -12,6 +13,7 @@ export default function RegisterView({ onSubmit }: Props) {
   const [phone, setPhone] = useState('');
   const [balanceType, setBalanceType] = useState<BalanceType>('money');
   const [initialBalance, setInitialBalance] = useState('');
+  const [zone, setZone] = useState<VenueZone>('general');
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -28,9 +30,9 @@ export default function RegisterView({ onSubmit }: Props) {
   const handleSubmit = async () => {
     if (!name || !initialBalance) return;
     setLoading(true);
-    await onSubmit({ name, email: email || undefined, phone: phone || undefined, balance_type: balanceType, initial_balance: parseFloat(initialBalance), photo });
+    await onSubmit({ name, email: email || undefined, phone: phone || undefined, balance_type: balanceType, initial_balance: parseFloat(initialBalance), zone, photo });
     setLoading(false);
-    setName(''); setEmail(''); setPhone(''); setInitialBalance(''); setPhoto(null); setPhotoPreview(null);
+    setName(''); setEmail(''); setPhone(''); setInitialBalance(''); setZone('general'); setPhoto(null); setPhotoPreview(null);
   };
 
   return (
@@ -89,9 +91,17 @@ export default function RegisterView({ onSubmit }: Props) {
               ))}
             </div>
           </div>
-          <div>
-            <label className="label">{balanceType === 'money' ? 'Monto inicial (USD)' : 'Cantidad de cervezas'}</label>
-            <input type="number" min="0" step={balanceType === 'money' ? '0.01' : '1'} className="input" value={initialBalance} onChange={e => setInitialBalance(e.target.value)} placeholder={balanceType === 'money' ? '50.00' : '10'} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label">{balanceType === 'money' ? 'Monto inicial (USD)' : 'Cantidad de cervezas'}</label>
+              <input type="number" min="0" step={balanceType === 'money' ? '0.01' : '1'} className="input" value={initialBalance} onChange={e => setInitialBalance(e.target.value)} placeholder={balanceType === 'money' ? '50.00' : '10'} />
+            </div>
+            <div>
+              <label className="label">Zona</label>
+              <select className="input" value={zone} onChange={e => setZone(e.target.value as VenueZone)}>
+                {Object.entries(ZONE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
           </div>
           <button onClick={handleSubmit} disabled={loading || !name || !initialBalance} className="btn-primary w-full py-3.5 flex items-center justify-center gap-2">
             {loading ? <span className="w-4 h-4 border-2 border-bg/30 border-t-bg rounded-full animate-spin" /> : <><UserPlus size={15}/> Registrar Cliente</>}
