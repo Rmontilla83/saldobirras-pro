@@ -370,6 +370,12 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
             </div>
             <div className="inline-block p-3 bg-white rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.25)]" ref={qrRef} />
             <div className="text-[10px] text-slate-600 mt-2.5 font-mono">{c.qr_code}</div>
+            {(c as any).pin && (
+              <div className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber/10 border border-amber/20">
+                <span className="text-[11px] text-slate-400">PIN:</span>
+                <span className="text-lg font-bold text-amber tracking-[0.3em] font-mono">{(c as any).pin}</span>
+              </div>
+            )}
             {c.email && can('send_email') && (
               <button onClick={() => onSendQREmail(c.id)} className="btn-outline mt-3 text-[10px] px-3 py-2 flex items-center gap-1.5 mx-auto">
                 <Mail size={12}/> Enviar por Correo

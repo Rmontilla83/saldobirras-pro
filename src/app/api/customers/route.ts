@@ -58,6 +58,19 @@ export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
   const qr_code = `SB-${nanoid(12)}`;
 
+  // Generate unique 4-digit PIN
+  let pin = '';
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const candidate = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    const { data: exists } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('business_id', user.business_id)
+      .eq('pin', candidate)
+      .maybeSingle();
+    if (!exists) { pin = candidate; break; }
+  }
+
   // Upload photo if provided
   let photo_url: string | null = null;
   if (photoFile && photoFile.size > 0) {
@@ -88,6 +101,7 @@ export async function POST(req: NextRequest) {
       balance: initial_balance,
       initial_balance,
       qr_code,
+      pin: pin || null,
       zone,
     })
     .select()

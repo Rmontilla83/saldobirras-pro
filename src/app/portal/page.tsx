@@ -20,6 +20,8 @@ const CAT_LABELS: Record<string, string> = {
 export default function PortalPage() {
   const [step, setStep] = useState<'scan' | 'menu' | 'confirm' | 'done'>('scan');
   const [qrInput, setQrInput] = useState('');
+  const [pinInput, setPinInput] = useState('');
+  const [loginMode, setLoginMode] = useState<'pin' | 'qr'>('pin');
   const [customer, setCustomer] = useState<CustomerInfo | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
@@ -52,14 +54,15 @@ export default function PortalPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const qr = params.get('qr');
-    if (qr) { setQrInput(qr); lookupCustomer(qr); }
+    if (qr) { setQrInput(qr); setLoginMode('qr'); lookupCustomer(qr, 'qr'); }
   }, []);
 
-  const lookupCustomer = async (qr: string) => {
+  const lookupCustomer = async (value: string, mode: 'qr' | 'pin' = 'qr') => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/portal?qr=${encodeURIComponent(qr)}`);
+      const param = mode === 'pin' ? `pin=${encodeURIComponent(value)}` : `qr=${encodeURIComponent(value)}`;
+      const res = await fetch(`/api/portal?${param}`);
       const data = await res.json();
       if (data.success) {
         setCustomer(data.data.customer);
@@ -163,23 +166,68 @@ export default function PortalPage() {
 
       <div className="max-w-lg mx-auto px-4 py-6">
 
-        {/* ═══ STEP 1: SCAN ═══ */}
+        {/* ═══ STEP 1: LOGIN ═══ */}
         {step === 'scan' && (
           <div className="text-center">
             <div className="w-20 h-20 rounded-2xl bg-amber/5 border border-amber/10 flex items-center justify-center mx-auto mb-6">
               <Package size={32} className="text-amber" />
             </div>
             <h1 className="text-xl font-bold mb-2">Bienvenido</h1>
-            <p className="text-slate-500 text-sm mb-8">Ingresa tu código de cliente para hacer un pedido</p>
+            <p className="text-slate-500 text-sm mb-6">Ingresa tu PIN o código para hacer un pedido</p>
 
-            <input type="text" className="w-full px-5 py-4 bg-[#101828] rounded-2xl border border-white/5 text-center text-lg font-mono focus:outline-none focus:border-amber/30 transition-colors"
-              value={qrInput} onChange={e => setQrInput(e.target.value)} placeholder="SB-XXXXXXXXXXXX"
-              onKeyDown={e => e.key === 'Enter' && qrInput && lookupCustomer(qrInput)} />
+            {/* Toggle PIN / QR */}
+            <div className="flex justify-center gap-1 mb-6 bg-[#101828] rounded-xl p-1 max-w-[280px] mx-auto">
+              <button onClick={() => setLoginMode('pin')}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${loginMode === 'pin' ? 'bg-amber text-black' : 'text-slate-500'}`}>
+                PIN
+              </button>
+              <button onClick={() => setLoginMode('qr')}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${loginMode === 'qr' ? 'bg-amber text-black' : 'text-slate-500'}`}>
+                Código QR
+              </button>
+            </div>
+
+            {loginMode === 'pin' ? (
+              <>
+                <div className="flex justify-center gap-3 mb-4">
+                  {[0, 1, 2, 3].map(i => (
+                    <input key={i} id={`pin-${i}`} type="tel" maxLength={1} inputMode="numeric" pattern="[0-9]"
+                      className="w-14 h-16 bg-[#101828] rounded-xl border border-white/10 text-center text-2xl font-bold focus:outline-none focus:border-amber/50 transition-colors"
+                      value={pinInput[i] || ''}
+                      onChange={e => {
+                        const v = e.target.value.replace(/\D/g, '');
+                        const newPin = pinInput.split('');
+                        newPin[i] = v;
+                        const joined = newPin.join('').slice(0, 4);
+                        setPinInput(joined);
+                        if (v && i < 3) {
+                          document.getElementById(`pin-${i + 1}`)?.focus();
+                        }
+                        if (joined.length === 4) {
+                          lookupCustomer(joined, 'pin');
+                        }
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Backspace' && !pinInput[i] && i > 0) {
+                          document.getElementById(`pin-${i - 1}`)?.focus();
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+                <p className="text-slate-600 text-xs mb-4">Tu PIN de 4 dígitos está en tu tarjeta</p>
+              </>
+            ) : (
+              <input type="text" className="w-full px-5 py-4 bg-[#101828] rounded-2xl border border-white/5 text-center text-lg font-mono focus:outline-none focus:border-amber/30 transition-colors mb-4"
+                value={qrInput} onChange={e => setQrInput(e.target.value)} placeholder="SB-XXXXXXXXXXXX"
+                onKeyDown={e => e.key === 'Enter' && qrInput && lookupCustomer(qrInput, 'qr')} />
+            )}
 
             {error && <div className="mt-3 text-red-400 text-sm">{error}</div>}
 
-            <button onClick={() => qrInput && lookupCustomer(qrInput)} disabled={loading || !qrInput}
-              className="w-full mt-4 py-4 bg-amber text-black font-bold rounded-2xl text-sm disabled:opacity-40 transition-opacity">
+            <button onClick={() => loginMode === 'pin' ? (pinInput.length === 4 && lookupCustomer(pinInput, 'pin')) : (qrInput && lookupCustomer(qrInput, 'qr'))}
+              disabled={loading || (loginMode === 'pin' ? pinInput.length < 4 : !qrInput)}
+              className="w-full mt-4 py-4 bg-amber text-black font-bold rounded-2xl text-base disabled:opacity-30 transition-all">
               {loading ? 'Buscando...' : 'Entrar'}
             </button>
           </div>
