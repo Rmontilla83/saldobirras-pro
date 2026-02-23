@@ -10,7 +10,7 @@ import type { Transaction } from '@/lib/types';
 
 interface Props { onLoadTransactions: (customerId?: string) => Promise<Transaction[]>; }
 
-type Filter = 'all' | 'active' | 'inactive';
+type Filter = 'all' | 'active' | 'inactive' | 'debt';
 
 export default function DashboardView({ onLoadTransactions }: Props) {
   const { customers, setView, search, setSearch } = useStore();
@@ -18,14 +18,17 @@ export default function DashboardView({ onLoadTransactions }: Props) {
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 700;
 
   const activeCustomers = customers.filter(c => c.balance > 0);
-  const inactiveCustomers = customers.filter(c => c.balance <= 0);
+  const inactiveCustomers = customers.filter(c => c.balance <= 0 && !(c as any).allow_negative);
+  const debtCustomers = customers.filter(c => c.balance < 0 && (c as any).allow_negative);
   const alerts = customers.filter(c => c.balance > 0 && isLowBalance(c.balance, c.balance_type));
   const totalBalance = customers.reduce((s, c) => c.balance_type === 'money' ? s + c.balance : s, 0);
+  const totalDebt = debtCustomers.reduce((s, c) => c.balance_type === 'money' ? s + Math.abs(c.balance) : s, 0);
 
   const filtered = customers.filter(c => {
     // Status filter
     if (filter === 'active' && c.balance <= 0) return false;
-    if (filter === 'inactive' && c.balance > 0) return false;
+    if (filter === 'inactive' && (c.balance > 0 || (c as any).allow_negative)) return false;
+    if (filter === 'debt' && !(c.balance < 0 && (c as any).allow_negative)) return false;
     // Search filter
     if (!search) return true;
     const q = search.toLowerCase();
@@ -74,6 +77,11 @@ export default function DashboardView({ onLoadTransactions }: Props) {
               <FilterBtn active={filter === 'inactive'} onClick={() => setFilter('inactive')} color="red">
                 Inactivos ({inactiveCustomers.length})
               </FilterBtn>
+              {debtCustomers.length > 0 && (
+                <FilterBtn active={filter === 'debt'} onClick={() => setFilter('debt')} color="purple">
+                  Con Deuda ({debtCustomers.length})
+                </FilterBtn>
+              )}
             </div>
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
@@ -99,6 +107,8 @@ function FilterBtn({ active, onClick, children, color }: { active: boolean; onCl
     ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
     : color === 'red' 
     ? 'bg-red-500/10 text-red-400 border-red-500/20'
+    : color === 'purple'
+    ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
     : 'bg-amber/10 text-amber border-amber/20';
   
   return (

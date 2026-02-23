@@ -46,7 +46,7 @@ export default function OrdersView({ showToast }: Props) {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); const iv = setInterval(load, 10000); return () => clearInterval(iv); }, [load]);
+  useEffect(() => { load(); const iv = setInterval(load, 5000); return () => clearInterval(iv); }, [load]);
 
   const updateStatus = async (orderId: string, status: string) => {
     const { data: { session } } = await supabase.auth.getSession();

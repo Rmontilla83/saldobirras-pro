@@ -110,12 +110,16 @@ export default function DashboardPage() {
     return () => { supabase.removeChannel(channel); };
   }, [store.user]);
 
-  // Auto-refresh every 45s
+  // Auto-refresh: 15s on mobile, 30s on desktop
   useEffect(() => {
+    const ms = (typeof window !== 'undefined' && window.innerWidth <= 700) ? 15000 : 30000;
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') loadCustomers();
-    }, 45000);
-    return () => clearInterval(interval);
+    }, ms);
+    // Also refresh when tab becomes visible
+    const onVisible = () => { if (document.visibilityState === 'visible') loadCustomers(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVisible); };
   }, []);
 
   const apiCall = async (url: string, method: string = 'GET', body?: any) => {

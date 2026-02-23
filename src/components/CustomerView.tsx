@@ -292,13 +292,16 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                       </button>
                     </div>
                     <button onClick={handleConsumeProducts} disabled={processing}
-                      className="btn-red w-full mt-2 py-3 text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50">
+                      className={`w-full mt-2 py-4 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 rounded-xl transition-colors
+                        ${isOwner ? 'btn-red' : 'hidden'}`}>
                       {processing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> :
-                        <><ShoppingCart size={14} /> Cobrar ${cartTotal.toFixed(2)}</>}
+                        <><ShoppingCart size={16} /> Cobrar ${cartTotal.toFixed(2)}</>}
                     </button>
                     <button onClick={handleSendToBar} disabled={processing}
-                      className="w-full mt-1.5 py-2.5 bg-blue-500/10 text-blue-400 rounded-xl text-[10px] font-semibold flex items-center justify-center gap-1.5 hover:bg-blue-500/20 transition-colors disabled:opacity-50">
-                      {processing ? '...' : <><Send size={12} /> Enviar a Barra</>}
+                      className={`w-full py-4 bg-blue-500/15 text-blue-400 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-blue-500/25 transition-colors disabled:opacity-50
+                        ${isOwner ? 'mt-1.5' : 'mt-2'}`}>
+                      {processing ? <span className="w-4 h-4 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" /> :
+                        <><Send size={16} /> ENVIAR PEDIDO</>}
                     </button>
                   </div>
                 )}

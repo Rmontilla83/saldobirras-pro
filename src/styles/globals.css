@@ -103,6 +103,7 @@ body {
   .badge-green { background: rgba(16,185,129,0.08); color: #10B981; }
   .badge-red { background: rgba(239,68,68,0.08); color: #EF4444; }
   .badge-orange { background: rgba(245,158,11,0.08); color: #F59E0B; }
+  .badge-purple { background: rgba(139,92,246,0.08); color: #A78BFA; }
 
   .toast {
     @apply fixed top-5 right-5 px-5 py-3.5 rounded-2xl font-semibold text-sm z-[9999] max-w-xs pointer-events-none;
@@ -122,3 +123,22 @@ body {
 @keyframes fadeIn { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
 @keyframes popScale { from { transform: scale(0.93); opacity:0; } to { transform: scale(1); opacity:1; } }
 @keyframes ring { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.2); } 70% { box-shadow: 0 0 0 16px rgba(16,185,129,0); } 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); } }
+
+/* Mobile overrides — bigger touch targets */
+@media (max-width: 700px) {
+  .nav-btn {
+    @apply px-3 py-3 text-[12px] rounded-xl;
+  }
+  .card {
+    @apply p-4;
+  }
+  .input {
+    @apply py-3.5 text-sm;
+  }
+  .btn-primary, .btn-green, .btn-red, .btn-outline {
+    @apply py-3.5 text-[13px];
+  }
+  .badge {
+    @apply text-[10px] px-2.5 py-1;
+  }
+}

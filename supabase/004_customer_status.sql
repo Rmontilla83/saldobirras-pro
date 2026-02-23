@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION update_customer_status()
 RETURNS TRIGGER AS $$
 BEGIN
   UPDATE customers 
-  SET is_active = (balance > 0)
+  SET is_active = (balance > 0 OR COALESCE(allow_negative, false))
   WHERE id = NEW.customer_id;
   RETURN NEW;
 END;
