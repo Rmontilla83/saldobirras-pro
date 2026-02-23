@@ -98,7 +98,7 @@ export default function ProductsView({ showToast }: Props) {
   };
 
   const filtered = filterCat === 'all' ? products : products.filter(p => p.category === filterCat);
-  const categories = ['all', ...new Set(products.map(p => p.category))];
+  const categories = ['all', ...Array.from(new Set(products.map(p => p.category)))];
 
   return (
     <div className="animate-[fadeIn_0.25s_ease]">
