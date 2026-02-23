@@ -12,10 +12,9 @@ import CustomerView from '@/components/CustomerView';
 import TransactionsView from '@/components/TransactionsView';
 import StatsView from '@/components/StatsView';
 import ScanView from '@/components/ScanView';
-import OrdersView from '@/components/OrdersView'
+import OrdersView from '@/components/OrdersView';
 import UsersView from '@/components/UsersView';
 import ProductsView from '@/components/ProductsView';
-import OrdersView from '@/components/OrdersView';
 import Toast from '@/components/Toast';
 
 export default function DashboardPage() {
