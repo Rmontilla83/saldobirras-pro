@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Minus, Send, ArrowLeft, Beer, Wine, Coffee, UtensilsCrossed, CircleDot, Package, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ShoppingCart, Plus, Minus, Send, ArrowLeft, Beer, Wine, Coffee, UtensilsCrossed, CircleDot, Package, CheckCircle, Download } from 'lucide-react';
 
 interface Product { id: string; name: string; description: string | null; category: string; price: number; is_available: boolean; }
 interface Zone { id: string; name: string; color: string; }
@@ -30,6 +30,23 @@ export default function PortalPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  // PWA Install prompt
+  useEffect(() => {
+    const handler = (e: any) => { e.preventDefault(); setInstallPrompt(e); setShowInstallBanner(true); };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const result = await installPrompt.userChoice;
+    if (result.outcome === 'accepted') setShowInstallBanner(false);
+    setInstallPrompt(null);
+  };
 
   // Check URL for QR code
   useEffect(() => {
@@ -123,6 +140,26 @@ export default function PortalPage() {
           )}
         </div>
       </div>
+
+      {/* Install Banner */}
+      {showInstallBanner && (
+        <div className="bg-amber/10 border-b border-amber/20 px-4 py-3">
+          <div className="max-w-lg mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Download size={16} className="text-amber" />
+              <span className="text-sm text-white/90">Instala la app en tu teléfono</span>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={handleInstall} className="px-4 py-1.5 bg-amber text-black text-xs font-bold rounded-lg">
+                Instalar
+              </button>
+              <button onClick={() => setShowInstallBanner(false)} className="text-slate-500 text-xs">
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-lg mx-auto px-4 py-6">
 

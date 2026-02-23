@@ -390,7 +390,8 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
             <div className="mt-4 pt-3 border-t border-white/[0.03]">
               <div className="text-[9px] text-slate-600 uppercase tracking-wider font-semibold text-center mb-2">Portal de Pedidos</div>
               <button onClick={() => {
-                const url = `${window.location.origin}/portal?qr=${c.qr_code}`;
+                const baseHost = window.location.hostname.replace(/^(app\.|www\.)/, '');
+                const url = `https://portal.${baseHost}/portal?qr=${c.qr_code}`;
                 navigator.clipboard.writeText(url);
                 alert('Link copiado al portapapeles');
               }} className="btn-outline w-full text-[10px] px-3 py-2 flex items-center justify-center gap-1.5">
@@ -398,7 +399,8 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
               </button>
               {c.email && can('send_email') && (
                 <button onClick={async () => {
-                  const url = `${window.location.origin}/portal?qr=${c.qr_code}`;
+                  const baseHost = window.location.hostname.replace(/^(app\.|www\.)/, '');
+                  const url = `https://portal.${baseHost}/portal?qr=${c.qr_code}`;
                   const supabase = (await import('@/lib/supabase-browser')).createClient();
                   const { data: { session } } = await supabase.auth.getSession();
                   if (!session) return;
