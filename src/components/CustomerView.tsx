@@ -248,7 +248,7 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                     <div className="space-y-1 mb-2.5">
                       {cartItems.map(item => (
                         <div key={item.product_id} className="flex items-center justify-between text-[11px]">
-                          <span className="text-slate-400">{item.qty}x {item.product_name}</span>
+                          <span className="text-slate-400">{item.qty}x {item.name}</span>
                           <span className="text-white/70 font-semibold tabular-nums">${item.subtotal.toFixed(2)}</span>
                         </div>
                       ))}
