@@ -91,7 +91,7 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
     .map(([pid, qty]) => {
       const product = products.find(p => p.id === pid);
       if (!product) return null;
-      return { product_id: pid, product_name: product.name, qty, price: Number(product.price), subtotal: Number(product.price) * qty, product };
+      return { product_id: pid, name: product.name, qty, price: Number(product.price), subtotal: Number(product.price) * qty, product };
     })
     .filter(Boolean) as any;
 
@@ -102,7 +102,7 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
     if (cartItems.length === 0) return;
     setProcessing(true);
     const items = cartItems.map(({ product, ...item }) => item);
-    const note = items.map(i => `${i.qty}x ${i.product_name}`).join(', ');
+    const note = items.map(i => `${i.qty}x ${i.name}`).join(', ');
     await onConsume({ customer_id: c.id, amount: cartTotal, note, items });
     clearCart();
     setProcessing(false);
