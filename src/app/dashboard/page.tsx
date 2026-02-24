@@ -297,6 +297,27 @@ export default function DashboardPage() {
       <div className="relative z-10 max-w-[1060px] mx-auto px-5 pb-12">
         <Header onRefresh={loadCustomers} onLogout={handleLogout} />
 
+        {/* ═══ PERSISTENT ORDER ALERT — Desktop only, any page ═══ */}
+        {!isMobile && store.pendingOrders > 0 && store.view !== 'orders' && (
+          <div onClick={() => store.setView('orders')}
+            className="mb-4 px-4 py-3 rounded-xl bg-yellow-400/15 border-2 border-yellow-400/40 flex items-center justify-between cursor-pointer hover:bg-yellow-400/20 transition-all animate-pulse">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-yellow-400/20 flex items-center justify-center">
+                <span className="text-xl">🔔</span>
+              </div>
+              <div>
+                <div className="text-sm font-bold text-yellow-300">
+                  {store.pendingOrders === 1 ? '1 pedido nuevo en cola' : `${store.pendingOrders} pedidos nuevos en cola`}
+                </div>
+                <div className="text-[11px] text-yellow-400/60">Click para ver pedidos</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1.5 rounded-lg bg-yellow-400 text-black text-xs font-bold">Ver Pedidos</span>
+            </div>
+          </div>
+        )}
+
         {store.view === 'dashboard' && (
           <DashboardView onLoadTransactions={loadTransactions} />
         )}

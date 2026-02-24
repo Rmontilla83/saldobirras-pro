@@ -178,17 +178,6 @@ export default function OrdersView({ showToast }: Props) {
 
   return (
     <div className="animate-[fadeIn_0.25s_ease]">
-      {/* ═══ NEW ORDER FLASH ALERT ═══ */}
-      {flash && (
-        <div className="mb-4 px-4 py-3 rounded-xl bg-yellow-400/20 border-2 border-yellow-400/50 flex items-center gap-3 animate-pulse">
-          <BellRing size={24} className="text-yellow-400 flex-shrink-0" />
-          <div>
-            <div className="text-sm font-bold text-yellow-300">🔔 NUEVO PEDIDO!</div>
-            <div className="text-xs text-yellow-400/80">Hay pedidos nuevos en la cola</div>
-          </div>
-        </div>
-      )}
-
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <div className="icon-box" style={{ background: 'rgba(245,166,35,0.08)' }}><ClipboardList size={16} className="text-amber" /></div>
