@@ -20,12 +20,14 @@ interface AppState {
   search: string;
   loading: boolean;
   synced: boolean;
+  pendingOrders: number;
 
   setView: (view: AppState['view'], customer?: Customer) => void;
   setScanPopup: (customer: Customer | null) => void;
   setSearch: (search: string) => void;
   setLoading: (loading: boolean) => void;
   setSynced: (synced: boolean) => void;
+  setPendingOrders: (count: number) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -54,6 +56,7 @@ export const useStore = create<AppState>((set) => ({
   search: '',
   loading: false,
   synced: false,
+  pendingOrders: 0,
 
   setView: (view, customer) =>
     set({
@@ -66,4 +69,5 @@ export const useStore = create<AppState>((set) => ({
   setSearch: (search) => set({ search }),
   setLoading: (loading) => set({ loading }),
   setSynced: (synced) => set({ synced }),
+  setPendingOrders: (pendingOrders) => set({ pendingOrders }),
 }));

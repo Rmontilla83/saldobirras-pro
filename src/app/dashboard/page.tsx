@@ -99,6 +99,28 @@ export default function DashboardPage() {
     return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVisible); };
   }, []);
 
+  // Background order polling — always runs to detect new orders for badge + notification
+  useEffect(() => {
+    const pollOrders = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      try {
+        const res = await fetch('/api/orders', { headers: { Authorization: `Bearer ${session.access_token}` } });
+        const json = await res.json();
+        if (json.success) {
+          const pending = json.data.filter((o: any) => o.status === 'pending').length;
+          store.setPendingOrders(pending);
+        }
+      } catch {}
+    };
+    // Only poll in background when NOT on orders view (OrdersView has its own polling)
+    const iv = setInterval(() => {
+      if (store.view !== 'orders' && document.visibilityState === 'visible') pollOrders();
+    }, 10000);
+    pollOrders(); // Initial
+    return () => clearInterval(iv);
+  }, []);
+
   const apiCall = async (url: string, method: string = 'GET', body?: any) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return null;

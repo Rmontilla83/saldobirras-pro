@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase-browser';
 import { useStore } from '@/lib/store';
-import { ClipboardList, Clock, ChefHat, CheckCircle, XCircle, RefreshCw, PackageCheck } from 'lucide-react';
+import { ClipboardList, Clock, ChefHat, CheckCircle, XCircle, RefreshCw, PackageCheck, BellRing } from 'lucide-react';
 
 interface Order {
   id: string;
@@ -29,24 +29,119 @@ const STATUS_CONFIG: Record<string, any> = {
   cancelled: { label: 'Cancelado', icon: <XCircle size={12} />, color: 'text-red-400', bg: 'bg-red-400/10', border: 'border-red-400/20' },
 };
 
+// Generate notification beep sound
+function playNotificationSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    // Play 3 urgent beeps
+    [0, 0.25, 0.5].forEach(delay => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = 'square';
+      gain.gain.value = 0.3;
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.15);
+    });
+    // Lower longer tone after beeps
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.frequency.value = 660;
+    osc2.type = 'square';
+    gain2.gain.value = 0.25;
+    osc2.start(ctx.currentTime + 0.85);
+    osc2.stop(ctx.currentTime + 1.3);
+  } catch (e) { /* Audio not supported */ }
+}
+
 export default function OrdersView({ showToast }: Props) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('active');
+  const [flash, setFlash] = useState(false);
   const supabase = createClient();
-  const { user } = useStore();
+  const { user, setPendingOrders, view } = useStore();
   const isOwner = user?.role === 'owner';
+  const prevPendingRef = useRef<string[]>([]);
+  const hasInteracted = useRef(false);
+
+  // Track user interaction for audio policy
+  useEffect(() => {
+    const mark = () => { hasInteracted.current = true; };
+    document.addEventListener('click', mark, { once: true });
+    document.addEventListener('keydown', mark, { once: true });
+    return () => { document.removeEventListener('click', mark); document.removeEventListener('keydown', mark); };
+  }, []);
 
   const load = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
     const res = await fetch('/api/orders', { headers: { Authorization: `Bearer ${session.access_token}` } });
     const json = await res.json();
-    if (json.success) setOrders(json.data);
+    if (json.success) {
+      const newOrders: Order[] = json.data;
+      setOrders(newOrders);
+
+      // Count pending orders and update store
+      const pendingIds = newOrders.filter(o => o.status === 'pending').map(o => o.id);
+      setPendingOrders(pendingIds.length);
+
+      // Detect NEW pending orders (not seen before)
+      const prevIds = prevPendingRef.current;
+      const brandNew = pendingIds.filter(id => !prevIds.includes(id));
+      
+      if (brandNew.length > 0 && prevIds.length > 0) {
+        // New order arrived! Alert!
+        if (hasInteracted.current) {
+          playNotificationSound();
+        }
+        setFlash(true);
+        setTimeout(() => setFlash(false), 3000);
+        
+        // Browser notification
+        if (Notification.permission === 'granted') {
+          new Notification('🍺 Nuevo Pedido!', {
+            body: `${brandNew.length} pedido(s) nuevo(s) en cola`,
+            icon: '/icon-192.png',
+            tag: 'new-order',
+          });
+        }
+        
+        // Change page title to flash
+        const origTitle = document.title;
+        let titleFlash = true;
+        const titleInterval = setInterval(() => {
+          document.title = titleFlash ? `🔴 (${pendingIds.length}) NUEVO PEDIDO!` : origTitle;
+          titleFlash = !titleFlash;
+        }, 800);
+        setTimeout(() => { clearInterval(titleInterval); document.title = origTitle; }, 8000);
+      }
+
+      // Update title with pending count always
+      if (pendingIds.length > 0) {
+        document.title = `(${pendingIds.length}) Pedidos — SaldoBirras`;
+      } else {
+        document.title = 'SaldoBirras — BirraSport';
+      }
+
+      prevPendingRef.current = pendingIds;
+    }
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); const iv = setInterval(load, 5000); return () => clearInterval(iv); }, [load]);
+  useEffect(() => {
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+    load();
+    const iv = setInterval(load, 5000);
+    return () => clearInterval(iv);
+  }, [load]);
 
   const updateStatus = async (orderId: string, status: string) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -83,6 +178,17 @@ export default function OrdersView({ showToast }: Props) {
 
   return (
     <div className="animate-[fadeIn_0.25s_ease]">
+      {/* ═══ NEW ORDER FLASH ALERT ═══ */}
+      {flash && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-yellow-400/20 border-2 border-yellow-400/50 flex items-center gap-3 animate-pulse">
+          <BellRing size={24} className="text-yellow-400 flex-shrink-0" />
+          <div>
+            <div className="text-sm font-bold text-yellow-300">🔔 NUEVO PEDIDO!</div>
+            <div className="text-xs text-yellow-400/80">Hay pedidos nuevos en la cola</div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <div className="icon-box" style={{ background: 'rgba(245,166,35,0.08)' }}><ClipboardList size={16} className="text-amber" /></div>

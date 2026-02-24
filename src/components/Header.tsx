@@ -6,7 +6,7 @@ import { LayoutDashboard, UserPlus, ArrowLeftRight, BarChart3, RefreshCw, ScanLi
 interface HeaderProps { onRefresh: () => void; onLogout: () => void; }
 
 export default function Header({ onRefresh, onLogout }: HeaderProps) {
-  const { view, setView, synced, user } = useStore();
+  const { view, setView, synced, user, pendingOrders } = useStore();
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 700;
   const isOwner = user?.role === 'owner';
   const perms = user?.permissions || {} as any;
@@ -45,7 +45,7 @@ export default function Header({ onRefresh, onLogout }: HeaderProps) {
             <>
               <NavBtn icon={<ScanLine size={14}/>} active={view==='scan'} onClick={()=>setView('scan')}>Escanear</NavBtn>
               {can('dashboard') && <NavBtn icon={<Users size={14}/>} active={view==='dashboard'} onClick={()=>setView('dashboard')}>Clientes</NavBtn>}
-              {isOwner && <NavBtn icon={<ClipboardList size={14}/>} active={view==='orders'} onClick={()=>setView('orders')}>Pedidos</NavBtn>}
+              {isOwner && <NavBtn icon={<ClipboardList size={14}/>} active={view==='orders'} onClick={()=>setView('orders')} badge={pendingOrders}>Pedidos</NavBtn>}
               {isOwner && can('register') && <NavBtn icon={<UserPlus size={14}/>} active={view==='register'} onClick={()=>setView('register')}>Nuevo</NavBtn>}
               {isOwner && can('transactions') && <NavBtn icon={<ArrowLeftRight size={14}/>} active={view==='transactions'} onClick={()=>setView('transactions')}>Movim.</NavBtn>}
               {isOwner && can('stats') && <NavBtn icon={<BarChart3 size={14}/>} active={view==='stats'} onClick={()=>setView('stats')}>Informes</NavBtn>}
@@ -58,7 +58,7 @@ export default function Header({ onRefresh, onLogout }: HeaderProps) {
               {can('dashboard') && <NavBtn icon={<LayoutDashboard size={14}/>} active={view==='dashboard'} onClick={()=>setView('dashboard')}>Panel</NavBtn>}
               {can('register') && <NavBtn icon={<UserPlus size={14}/>} active={view==='register'} onClick={()=>setView('register')}>Registrar</NavBtn>}
               {can('transactions') && <NavBtn icon={<ArrowLeftRight size={14}/>} active={view==='transactions'} onClick={()=>setView('transactions')}>Movimientos</NavBtn>}
-              {can('consume') && <NavBtn icon={<ClipboardList size={14}/>} active={view==='orders'} onClick={()=>setView('orders')}>Pedidos</NavBtn>}
+              {can('consume') && <NavBtn icon={<ClipboardList size={14}/>} active={view==='orders'} onClick={()=>setView('orders')} badge={pendingOrders}>Pedidos</NavBtn>}
               {can('stats') && <NavBtn icon={<BarChart3 size={14}/>} active={view==='stats'} onClick={()=>setView('stats')}>Informes</NavBtn>}
               {isOwner && <NavBtn icon={<Package size={14}/>} active={view==='products'} onClick={()=>setView('products')}>Productos</NavBtn>}
               {isOwner && <NavBtn icon={<ShieldCheck size={14}/>} active={view==='users'} onClick={()=>setView('users')}>Usuarios</NavBtn>}
@@ -72,10 +72,15 @@ export default function Header({ onRefresh, onLogout }: HeaderProps) {
   );
 }
 
-function NavBtn({ icon, active, onClick, children }: { icon: React.ReactNode; active: boolean; onClick: () => void; children?: React.ReactNode }) {
+function NavBtn({ icon, active, onClick, children, badge }: { icon: React.ReactNode; active: boolean; onClick: () => void; children?: React.ReactNode; badge?: number }) {
   return (
-    <button onClick={onClick} className={`nav-btn ${active ? 'active' : ''}`}>
+    <button onClick={onClick} className={`nav-btn ${active ? 'active' : ''} relative`}>
       {icon}{children}
+      {badge != null && badge > 0 && (
+        <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]">
+          {badge}
+        </span>
+      )}
     </button>
   );
 }
