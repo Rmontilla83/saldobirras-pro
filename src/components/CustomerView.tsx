@@ -382,12 +382,14 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
               </button>
             )}
             <button onClick={async () => {
-              const { generateCard, preloadImage } = await import('@/lib/card-generator');
-              const [photoBase64, logoBase64] = await Promise.all([
+              const { generateCard, preloadImage, preloadPNG } = await import('@/lib/card-generator');
+              const [photoBase64, logoBase64, marinosGoldBase64, birrasportBase64] = await Promise.all([
                 c.photo_url ? preloadImage(c.photo_url) : Promise.resolve(null),
-                preloadImage('/logo.png'),
+                preloadPNG('/logo.png'),
+                preloadPNG('/marinos-gold.png'),
+                preloadPNG('/birrasport-logo.png'),
               ]);
-              await generateCard({ customer: c, photoBase64, logoBase64 });
+              await generateCard({ customer: c, photoBase64, logoBase64, marinosGoldBase64, birrasportBase64 });
             }} className="btn-outline mt-2 text-[10px] px-3 py-2 flex items-center gap-1.5 mx-auto">
               <CreditCard size={12}/> Imprimir Carnet
             </button>
