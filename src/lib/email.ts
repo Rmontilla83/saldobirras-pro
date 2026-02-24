@@ -95,26 +95,70 @@ function zeroBalanceTemplate(name: string, balanceType: string) {
   `);
 }
 
-function qrEmailTemplate(name: string, balance: number, balanceType: string, qrCode: string) {
+function qrEmailTemplate(name: string, balance: number, balanceType: string, qrCode: string, pin?: string) {
   const unit = balanceType === 'money' ? '$' : '';
   const suffix = balanceType === 'beers' ? ' 🍺' : '';
+  const portalUrl = `https://portal.birrasport.com/portal?qr=${encodeURIComponent(qrCode)}`;
 
   return baseTemplate(`
     <p style="color:#F0F2F8;font-size:16px;margin:0 0 4px;">Hola <strong>${name}</strong>,</p>
-    <p style="color:#7B8DB5;font-size:14px;margin:0 0 20px;">Aquí tienes tu código QR para identificarte en BirraSport.</p>
+    <p style="color:#7B8DB5;font-size:14px;margin:0 0 20px;">¡Bienvenido a BirraSport! Aquí tienes toda la información para disfrutar tu experiencia.</p>
 
     <div style="background:rgba(245,166,35,0.04);border:1px solid rgba(245,166,35,0.06);border-radius:12px;padding:20px;text-align:center;margin-bottom:20px;">
       <p style="color:#7B8DB5;font-size:10px;letter-spacing:3px;text-transform:uppercase;margin:0 0 6px;">Saldo Disponible</p>
       <p style="color:#F5A623;font-size:42px;font-weight:900;margin:0;">${unit}${balance.toFixed(balanceType === 'money' ? 2 : 0)}${suffix}</p>
     </div>
 
-    <div style="text-align:center;">
-      <p style="color:#7B8DB5;font-size:11px;margin:0 0 10px;">Presenta este código en caja:</p>
+    <div style="text-align:center;margin-bottom:24px;">
+      <p style="color:#7B8DB5;font-size:11px;margin:0 0 10px;">Tu código QR para identificarte en caja:</p>
       <div style="display:inline-block;background:#FFFFFF;padding:12px;border-radius:12px;">
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrCode)}&color=1B2A4A" alt="QR Code" width="180" height="180" style="display:block;" />
       </div>
       <p style="color:#4A5A7A;font-size:10px;margin:10px 0 0;">ID: ${qrCode}</p>
     </div>
+
+    ${pin ? `
+    <div style="background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.12);border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;">
+      <p style="color:#7B8DB5;font-size:10px;letter-spacing:3px;text-transform:uppercase;margin:0 0 8px;">Tu PIN de acceso</p>
+      <p style="color:#F5A623;font-size:48px;font-weight:900;letter-spacing:12px;margin:0;">${pin}</p>
+      <p style="color:#7B8DB5;font-size:11px;margin:8px 0 0;">Usa este PIN para entrar al portal desde tu teléfono</p>
+    </div>
+    ` : ''}
+
+    <div style="background:rgba(0,214,143,0.04);border:1px solid rgba(0,214,143,0.10);border-radius:12px;padding:24px;margin-bottom:20px;">
+      <p style="color:#00D68F;font-size:14px;font-weight:700;margin:0 0 12px;text-align:center;">📱 Haz pedidos desde tu teléfono</p>
+      <p style="color:#7B8DB5;font-size:13px;margin:0 0 16px;text-align:center;">Entra al portal, revisa el menú y pide sin hacer cola.</p>
+      <div style="text-align:center;">
+        <a href="${portalUrl}" style="display:inline-block;background:#F5A623;color:#000;font-size:14px;font-weight:800;text-decoration:none;padding:14px 32px;border-radius:12px;">ENTRAR AL PORTAL</a>
+      </div>
+      <p style="color:#4A5A7A;font-size:10px;text-align:center;margin:12px 0 0;">portal.birrasport.com</p>
+    </div>
+
+    <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:20px;">
+      <p style="color:#F0F2F8;font-size:13px;font-weight:700;margin:0 0 12px;">¿Cómo funciona?</p>
+      <table style="width:100%;border-spacing:0 8px;">
+        <tr>
+          <td style="color:#F5A623;font-size:20px;width:36px;vertical-align:top;padding:0;">1.</td>
+          <td style="color:#7B8DB5;font-size:12px;padding:0;">Abre <strong style="color:#F0F2F8;">portal.birrasport.com</strong> en tu teléfono${pin ? ` e ingresa tu PIN <strong style="color:#F5A623;">${pin}</strong>` : ''}</td>
+        </tr>
+        <tr>
+          <td style="color:#F5A623;font-size:20px;width:36px;vertical-align:top;padding:0;">2.</td>
+          <td style="color:#7B8DB5;font-size:12px;padding:0;">Explora el menú y selecciona lo que quieras pedir</td>
+        </tr>
+        <tr>
+          <td style="color:#F5A623;font-size:20px;width:36px;vertical-align:top;padding:0;">3.</td>
+          <td style="color:#7B8DB5;font-size:12px;padding:0;">Envía tu pedido y te lo llevan a tu zona</td>
+        </tr>
+        <tr>
+          <td style="color:#F5A623;font-size:20px;width:36px;vertical-align:top;padding:0;">4.</td>
+          <td style="color:#7B8DB5;font-size:12px;padding:0;">El monto se descuenta automáticamente de tu saldo</td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="color:#7B8DB5;font-size:12px;text-align:center;margin:20px 0 0;">
+      💡 <strong style="color:#F0F2F8;">Tip:</strong> Instala la app en tu teléfono desde el portal para acceso rápido
+    </p>
   `);
 }
 
@@ -171,13 +215,13 @@ export async function sendZeroBalanceEmail(to: string, name: string, balanceType
   }
 }
 
-export async function sendQREmail(to: string, name: string, balance: number, balanceType: string, qrCode: string) {
+export async function sendQREmail(to: string, name: string, balance: number, balanceType: string, qrCode: string, pin?: string) {
   try {
     const { data, error } = await resend.emails.send({
       from: FROM,
       to,
-      subject: `🍺 Tu código QR — BirraSport`,
-      html: qrEmailTemplate(name, balance, balanceType, qrCode),
+      subject: `🍺 Bienvenido a BirraSport — Tu acceso y portal de pedidos`,
+      html: qrEmailTemplate(name, balance, balanceType, qrCode, pin),
     });
     console.log('📧 QR email sent:', to, data?.id);
     return { success: true, id: data?.id };

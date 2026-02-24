@@ -118,9 +118,9 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Send QR email automatically
+  // Send welcome email with QR, PIN, and portal invitation
   if (email) {
-    sendQREmail(email, name, initial_balance, balance_type, qr_code).catch(console.error);
+    sendQREmail(email, name, initial_balance, balance_type, qr_code, pin).catch(console.error);
   }
 
   // Audit log

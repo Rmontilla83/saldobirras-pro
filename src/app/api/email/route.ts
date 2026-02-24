@@ -27,7 +27,8 @@ export async function POST(req: NextRequest) {
     customer.name,
     customer.balance,
     customer.balance_type,
-    customer.qr_code
+    customer.qr_code,
+    customer.pin
   );
 
   if (result.success) return ok({ message: 'Correo enviado' });
