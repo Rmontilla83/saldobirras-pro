@@ -1,170 +1,228 @@
 import type { Customer } from './types';
 
-const W = 85.6;
-const H = 54;
+// Credit card size at 300 DPI
+const DPI = 300;
+const W = Math.round(85.6 * DPI / 25.4); // ~1011px
+const H = Math.round(54 * DPI / 25.4);   // ~638px
+
+function mm(v: number) { return Math.round(v * DPI / 25.4); }
 
 interface CardOptions {
   customer: Customer;
   photoBase64: string | null;
   logoBase64: string | null;
   marinosGoldBase64?: string | null;
-  marinos2026Base64?: string | null;
   birrasportBase64?: string | null;
 }
 
-export async function generateCard({ customer, photoBase64, logoBase64, marinosGoldBase64, marinos2026Base64, birrasportBase64 }: CardOptions): Promise<void> {
-  const { jsPDF } = await import('jspdf');
+function loadImg(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+export async function generateCard({ customer, photoBase64, logoBase64, marinosGoldBase64, birrasportBase64 }: CardOptions): Promise<void> {
   const QRCode = await import('qrcode');
 
-  const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [H, W] });
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
 
-  // ═══ BACKGROUND — Deep navy ═══
-  pdf.setFillColor(8, 12, 28);
-  pdf.rect(0, 0, W, H, 'F');
+  // ═══ BACKGROUND ═══
+  ctx.fillStyle = '#080C1C';
+  ctx.fillRect(0, 0, W, H);
 
-  // Subtle diagonal lines
-  pdf.setDrawColor(14, 22, 42);
-  pdf.setLineWidth(0.06);
-  for (let i = -H; i < W + H; i += 2.5) {
-    pdf.line(i, 0, i + H, H);
+  // Diagonal lines
+  ctx.strokeStyle = '#0E162A';
+  ctx.lineWidth = 1;
+  for (let i = -H; i < W + H; i += mm(2.5)) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i + H, H);
+    ctx.stroke();
   }
 
   // Darken overlay
-  pdf.setGState(new (pdf as any).GState({ opacity: 0.7 }));
-  pdf.setFillColor(8, 12, 28);
-  pdf.rect(0, 0, W, H, 'F');
-  pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
+  ctx.fillStyle = 'rgba(8, 12, 28, 0.7)';
+  ctx.fillRect(0, 0, W, H);
 
-  // ═══ MARINOS GOLD WATERMARK — ghosted background ═══
+  // ═══ MARINOS GOLD WATERMARK ═══
   if (marinosGoldBase64) {
-    pdf.setGState(new (pdf as any).GState({ opacity: 0.055 }));
-    pdf.addImage(marinosGoldBase64, 'PNG', W / 2 - 30, H / 2 - 28, 60, 56);
-    pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
+    try {
+      const mgImg = await loadImg(marinosGoldBase64);
+      ctx.globalAlpha = 0.055;
+      const mgS = mm(56);
+      ctx.drawImage(mgImg, W / 2 - mgS / 2, H / 2 - mgS / 2, mgS, mgS);
+      ctx.globalAlpha = 1;
+    } catch {}
   }
 
-  // ═══ TOP GOLD BAR ═══
-  pdf.setFillColor(200, 155, 40);
-  pdf.rect(0, 0, W, 0.5, 'F');
-  pdf.setFillColor(235, 185, 60);
-  pdf.rect(W * 0.25, 0, W * 0.5, 0.5, 'F');
+  // ═══ GOLD BARS ═══
+  ctx.fillStyle = '#C89B28';
+  ctx.fillRect(0, 0, W, mm(0.5));
+  ctx.fillStyle = '#EBBB3C';
+  ctx.fillRect(W * 0.25, 0, W * 0.5, mm(0.5));
 
-  // ═══ BOTTOM GOLD BAR ═══
-  pdf.setFillColor(200, 155, 40);
-  pdf.rect(0, H - 0.5, W, 0.5, 'F');
-  pdf.setFillColor(235, 185, 60);
-  pdf.rect(W * 0.25, H - 0.5, W * 0.5, 0.5, 'F');
+  ctx.fillStyle = '#C89B28';
+  ctx.fillRect(0, H - mm(0.5), W, mm(0.5));
+  ctx.fillStyle = '#EBBB3C';
+  ctx.fillRect(W * 0.25, H - mm(0.5), W * 0.5, mm(0.5));
 
   // ═══ HEADER BAR ═══
-  pdf.setFillColor(10, 16, 32);
-  pdf.rect(0, 0.5, W, 12.5, 'F');
+  ctx.fillStyle = '#0A1020';
+  ctx.fillRect(0, mm(0.5), W, mm(12.5));
 
-  // Gold line under header
-  pdf.setDrawColor(200, 155, 40);
-  pdf.setLineWidth(0.2);
-  pdf.line(4, 13, W - 4, 13);
+  // Gold line
+  ctx.strokeStyle = '#C89B28';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(mm(4), mm(13));
+  ctx.lineTo(W - mm(4), mm(13));
+  ctx.stroke();
 
-  // BirraSport logo (left, prominent, bigger)
+  // BirraSport logo (left, big)
   const bsLogo = birrasportBase64 || logoBase64;
   if (bsLogo) {
-    pdf.addImage(bsLogo, 'PNG', 3, 1, 14, 11);
+    try {
+      const bsImg = await loadImg(bsLogo);
+      ctx.drawImage(bsImg, mm(3), mm(1), mm(14), mm(11));
+    } catch {}
   }
 
   // Brand text
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(10);
-  pdf.setTextColor(200, 155, 40);
-  pdf.text('BIRRASPORT', 19, 5.8);
+  ctx.fillStyle = '#C89B28';
+  ctx.font = `bold ${mm(3.5)}px 'Segoe UI', Arial, sans-serif`;
+  ctx.fillText('BIRRASPORT', mm(19), mm(6.5));
 
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(3.5);
-  pdf.setTextColor(100, 120, 150);
-  pdf.text('Cervecería Premium  ·  SaldoBirras', 19, 8.8);
+  ctx.fillStyle = '#647896';
+  ctx.font = `${mm(1.5)}px 'Segoe UI', Arial, sans-serif`;
+  ctx.fillText('Cervecería Premium  ·  SaldoBirras', mm(19), mm(9.5));
 
-  // Marinos Gold 50 Años (right in header)
+  // Marinos Gold 50 Años (right)
   if (marinosGoldBase64) {
-    pdf.addImage(marinosGoldBase64, 'PNG', W - 16, 1.5, 13, 10);
+    try {
+      const mgImg = await loadImg(marinosGoldBase64);
+      ctx.drawImage(mgImg, W - mm(16), mm(1.5), mm(13), mm(10));
+    } catch {}
   }
 
   // ═══ PHOTO ═══
-  const px = 4.5, py = 16, pw = 18, ph = 22;
+  const px = mm(4.5), py = mm(16), pw = mm(18), ph = mm(22);
 
-  pdf.setFillColor(200, 155, 40);
-  pdf.roundedRect(px - 0.7, py - 0.7, pw + 1.4, ph + 1.4, 1.5, 1.5, 'F');
+  // Gold frame
+  roundRect(ctx, px - mm(0.7), py - mm(0.7), pw + mm(1.4), ph + mm(1.4), mm(1.5));
+  ctx.fillStyle = '#C89B28';
+  ctx.fill();
 
-  pdf.setFillColor(12, 20, 38);
-  pdf.roundedRect(px, py, pw, ph, 1, 1, 'F');
+  // Inner dark
+  roundRect(ctx, px, py, pw, ph, mm(1));
+  ctx.fillStyle = '#0C1426';
+  ctx.fill();
 
   if (photoBase64) {
-    pdf.addImage(photoBase64, 'JPEG', px + 0.4, py + 0.4, pw - 0.8, ph - 0.8);
-    pdf.setDrawColor(200, 155, 40);
-    pdf.setLineWidth(0.7);
-    pdf.roundedRect(px, py, pw, ph, 1, 1, 'S');
+    try {
+      const photoImg = await loadImg(photoBase64);
+      ctx.save();
+      roundRect(ctx, px + mm(0.4), py + mm(0.4), pw - mm(0.8), ph - mm(0.8), mm(0.8));
+      ctx.clip();
+      ctx.drawImage(photoImg, px + mm(0.4), py + mm(0.4), pw - mm(0.8), ph - mm(0.8));
+      ctx.restore();
+      roundRect(ctx, px, py, pw, ph, mm(1));
+      ctx.strokeStyle = '#C89B28';
+      ctx.lineWidth = mm(0.7);
+      ctx.stroke();
+    } catch {}
   } else {
     const initials = customer.name.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase();
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(16);
-    pdf.setTextColor(200, 155, 40);
-    pdf.text(initials, px + pw / 2, py + ph / 2 + 2.5, { align: 'center' });
+    ctx.fillStyle = '#C89B28';
+    ctx.font = `bold ${mm(6)}px 'Segoe UI', Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(initials, px + pw / 2, py + ph / 2 + mm(2));
+    ctx.textAlign = 'left';
   }
 
   // ═══ CUSTOMER INFO ═══
-  const ix = px + pw + 3;
+  const ix = px + pw + mm(3);
 
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(3.5);
-  pdf.setTextColor(200, 155, 40);
-  pdf.text('━━  M I E M B R O  V I P  ━━', ix, 18.5);
+  ctx.fillStyle = '#C89B28';
+  ctx.font = `bold ${mm(1.5)}px 'Segoe UI', Arial, sans-serif`;
+  ctx.fillText('━━  M I E M B R O  V I P  ━━', ix, mm(18.5));
 
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(8);
-  pdf.setTextColor(245, 245, 255);
+  ctx.fillStyle = '#F5F5FF';
+  ctx.font = `bold ${mm(3)}px 'Segoe UI', Arial, sans-serif`;
   const dispName = customer.name.length > 20 ? customer.name.substring(0, 20) + '…' : customer.name;
-  pdf.text(dispName.toUpperCase(), ix, 23.5);
+  ctx.fillText(dispName.toUpperCase(), ix, mm(24));
 
-  pdf.setDrawColor(200, 155, 40);
-  pdf.setLineWidth(0.12);
-  pdf.line(ix, 25.5, ix + 26, 25.5);
+  // Gold separator
+  ctx.strokeStyle = '#C89B28';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(ix, mm(25.5));
+  ctx.lineTo(ix + mm(26), mm(25.5));
+  ctx.stroke();
 
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(4.5);
-  pdf.setTextColor(120, 140, 175);
-  let cy = 29.5;
+  ctx.fillStyle = '#788CAF';
+  ctx.font = `${mm(1.8)}px 'Segoe UI', Arial, sans-serif`;
+  let cy = mm(29.5);
   if (customer.email) {
-    pdf.text(customer.email, ix, cy);
-    cy += 3.5;
+    ctx.fillText(customer.email, ix, cy);
+    cy += mm(3.5);
   }
   if (customer.phone) {
-    pdf.text(customer.phone, ix, cy);
-    cy += 4;
+    ctx.fillText(customer.phone, ix, cy);
+    cy += mm(4);
   }
 
   // PIN
   if ((customer as any).pin) {
-    pdf.setFillColor(18, 28, 48);
-    pdf.setDrawColor(200, 155, 40);
-    pdf.setLineWidth(0.15);
-    pdf.roundedRect(ix, cy, 14, 5, 1.2, 1.2, 'FD');
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(3);
-    pdf.setTextColor(120, 140, 175);
-    pdf.text('PIN', ix + 2, cy + 2);
-    pdf.setFontSize(7);
-    pdf.setTextColor(200, 155, 40);
-    pdf.text((customer as any).pin, ix + 2, cy + 4.3);
-    cy += 7;
+    roundRect(ctx, ix, cy, mm(14), mm(5), mm(1.2));
+    ctx.fillStyle = '#121C30';
+    ctx.fill();
+    ctx.strokeStyle = '#C89B28';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#788CAF';
+    ctx.font = `bold ${mm(1.2)}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText('PIN', ix + mm(1.5), cy + mm(1.8));
+    ctx.fillStyle = '#C89B28';
+    ctx.font = `bold ${mm(2.8)}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText((customer as any).pin, ix + mm(1.5), cy + mm(4.3));
+    cy += mm(7);
   }
 
-  // Balance type pill
-  pdf.setFillColor(18, 28, 48);
-  pdf.setDrawColor(200, 155, 40);
-  pdf.setLineWidth(0.12);
-  const pillText = customer.balance_type === 'money' ? '  $  SALDO EN DÓLARES  ' : '  SALDO EN CERVEZAS  ';
-  const pillW = 26;
-  pdf.roundedRect(ix, cy, pillW, 4.2, 1, 1, 'FD');
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(3.2);
-  pdf.setTextColor(200, 155, 40);
-  pdf.text(pillText, ix + pillW / 2, cy + 2.8, { align: 'center' });
+  // Balance pill
+  roundRect(ctx, ix, cy, mm(26), mm(4.2), mm(1));
+  ctx.fillStyle = '#121C30';
+  ctx.fill();
+  ctx.strokeStyle = '#C89B28';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.fillStyle = '#C89B28';
+  ctx.font = `bold ${mm(1.3)}px 'Segoe UI', Arial, sans-serif`;
+  ctx.textAlign = 'center';
+  const pillText = customer.balance_type === 'money' ? '$  SALDO EN DÓLARES' : 'SALDO EN CERVEZAS';
+  ctx.fillText(pillText, ix + mm(13), cy + mm(2.8));
+  ctx.textAlign = 'left';
 
   // ═══ QR CODE ═══
   const qrDataUrl = await QRCode.toDataURL(customer.qr_code, {
@@ -172,31 +230,46 @@ export async function generateCard({ customer, photoBase64, logoBase64, marinosG
     color: { dark: '#0A1020', light: '#FFFFFF' },
   });
 
-  const qs = 18, qx = W - qs - 4.5, qy = 15.5;
+  const qs = mm(18), qx = W - qs - mm(4.5), qy = mm(15.5);
 
-  pdf.setFillColor(200, 155, 40);
-  pdf.roundedRect(qx - 1, qy - 1, qs + 2, qs + 2, 1.8, 1.8, 'F');
+  // Gold frame
+  roundRect(ctx, qx - mm(1), qy - mm(1), qs + mm(2), qs + mm(2), mm(1.8));
+  ctx.fillStyle = '#C89B28';
+  ctx.fill();
 
-  pdf.setFillColor(255, 255, 255);
-  pdf.roundedRect(qx - 0.3, qy - 0.3, qs + 0.6, qs + 0.6, 1, 1, 'F');
+  // White bg
+  roundRect(ctx, qx - mm(0.3), qy - mm(0.3), qs + mm(0.6), qs + mm(0.6), mm(1));
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fill();
 
-  pdf.addImage(qrDataUrl, 'PNG', qx, qy, qs, qs);
+  // QR image
+  try {
+    const qrImg = await loadImg(qrDataUrl);
+    ctx.drawImage(qrImg, qx, qy, qs, qs);
+  } catch {}
 
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(3);
-  pdf.setTextColor(200, 155, 40);
-  pdf.text('ESCANEAR', qx + qs / 2, qy + qs + 2.5, { align: 'center' });
+  // Scan label
+  ctx.fillStyle = '#C89B28';
+  ctx.font = `bold ${mm(1.3)}px 'Segoe UI', Arial, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText('ESCANEAR', qx + qs / 2, qy + qs + mm(2.5));
+  ctx.textAlign = 'left';
 
-  // ═══ BOTTOM — Card ID ═══
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(2.5);
-  pdf.setTextColor(45, 60, 85);
-  pdf.text(customer.qr_code, W - 4, H - 2, { align: 'right' });
-  pdf.text('CARD ID', W - 4, H - 4.2, { align: 'right' });
+  // ═══ CARD ID ═══
+  ctx.fillStyle = '#2D3C55';
+  ctx.font = `${mm(1)}px 'Segoe UI', Arial, sans-serif`;
+  ctx.textAlign = 'right';
+  ctx.fillText('CARD ID', W - mm(4), H - mm(4.2));
+  ctx.fillText(customer.qr_code, W - mm(4), H - mm(2));
+  ctx.textAlign = 'left';
 
-  // ═══ SAVE ═══
+  // ═══ DOWNLOAD AS PNG ═══
+  const dataUrl = canvas.toDataURL('image/png');
+  const link = document.createElement('a');
   const safe = customer.name.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_');
-  pdf.save(`Carnet_${safe}.pdf`);
+  link.download = `Carnet_${safe}.png`;
+  link.href = dataUrl;
+  link.click();
 }
 
 // Helper: preload an image URL to base64 as JPEG
