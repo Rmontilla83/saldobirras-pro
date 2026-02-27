@@ -242,7 +242,7 @@ export default function PortalPage() {
 
               <div className="flex items-center gap-3">
                 {customer.photo_url ? (
-                  <img src={customer.photo_url} className="w-14 h-14 rounded-2xl object-cover border-2 border-amber/20" />
+                  <img src={customer.photo_url} alt={customer.name} className="w-14 h-14 rounded-2xl object-cover border-2 border-amber/20" />
                 ) : (
                   <div className="w-14 h-14 rounded-2xl bg-amber/10 flex items-center justify-center">
                     <span className="text-xl font-bold text-amber">
@@ -259,6 +259,23 @@ export default function PortalPage() {
           </div>
 
           <div className="max-w-lg mx-auto px-4">
+            {/* Balance card */}
+            <div className="mt-4 mb-5 rounded-2xl bg-gradient-to-r from-amber/[0.06] to-transparent border border-amber/10 p-4 flex items-center gap-3">
+              <Wallet size={24} className="text-amber flex-shrink-0" />
+              <div className="flex-1">
+                <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Mi Saldo</div>
+                <div className="text-2xl font-extrabold text-amber">
+                  {customer.balance_type === 'money' ? `$${customer.balance.toFixed(2)}` : `${customer.balance} 🍺`}
+                </div>
+              </div>
+              {customer.balance_held > 0 && (
+                <div className="text-right">
+                  <div className="text-[10px] text-yellow-500">Retenido: ${customer.balance_held.toFixed(2)}</div>
+                  <div className="text-[10px] text-slate-500">Disponible: ${customer.available_balance.toFixed(2)}</div>
+                </div>
+              )}
+            </div>
+
             {/* Zone selector — big friendly buttons */}
             {zones.length > 0 && (
               <div className="mt-4 mb-5">
@@ -469,7 +486,7 @@ export default function PortalPage() {
 
           <div className="flex items-center gap-3 mb-10 text-slate-500">
             <Clock size={18} />
-            <span className="text-sm">Te avisaremos cuando esté listo</span>
+            <span className="text-sm">Espera tu pedido, te lo llevaremos a tu mesa</span>
           </div>
 
           <button onClick={() => { setStep('menu'); setNote(''); setError(''); }}
@@ -478,7 +495,7 @@ export default function PortalPage() {
           </button>
 
           <button onClick={() => { setStep('scan'); setCustomer(null); setCart({}); setPinInput(''); }}
-            className="mt-3 py-3 text-slate-600 text-sm font-semibold">
+            className="mt-3 py-3 text-slate-400 text-sm font-semibold hover:text-white/60 transition-colors">
             Cerrar sesión
           </button>
         </div>

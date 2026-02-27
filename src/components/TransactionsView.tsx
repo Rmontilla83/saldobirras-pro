@@ -5,12 +5,14 @@ import { useStore } from '@/lib/store';
 import { formatMoney, formatDate } from '@/lib/utils';
 import { createClient } from '@/lib/supabase-browser';
 import { ArrowLeftRight, Search, Download, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
+import { useIsMobile } from '@/lib/useIsMobile';
 import type { Transaction } from '@/lib/types';
 
 interface Props { onLoadTransactions: () => Promise<Transaction[]>; }
 
 export default function TransactionsView({ onLoadTransactions }: Props) {
   const { search, setSearch, setView, customers } = useStore();
+  const isMobile = useIsMobile();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -76,38 +78,67 @@ export default function TransactionsView({ onLoadTransactions }: Props) {
         ) : !filtered.length ? (
           <div className="text-center text-slate-600 py-10 text-sm">Sin movimientos registrados</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-white/[0.04]">
-                  {['Fecha','Cliente','Cajero','Tipo','Monto','Método','Ref','Detalle'].map(h => (
-                    <th key={h} className="text-left px-3 py-2.5 text-slate-600 font-semibold text-[9px] uppercase tracking-[1px]">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(t => (
-                  <tr key={t.id} className="border-b border-white/[0.015] cursor-pointer hover:bg-white/[0.01] transition-colors" onClick={() => { const cc = customers.find(c => c.id === t.customer_id); if(cc) setView('customer', cc); }}>
-                    <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{formatDate(t.created_at)}</td>
-                    <td className="px-3 py-2.5 font-medium text-white/80">{t.customer_name||'—'}</td>
-                    <td className="px-3 py-2.5 text-slate-500">{t.cashier_name||'—'}</td>
-                    <td className="px-3 py-2.5">
+          isMobile ? (
+            /* Mobile: card-based layout */
+            <div className="space-y-2">
+              {filtered.map(t => (
+                <div key={t.id} className="p-3.5 rounded-xl border border-white/[0.03] hover:bg-white/[0.01] cursor-pointer transition-colors"
+                  onClick={() => { const cc = customers.find(c => c.id === t.customer_id); if(cc) setView('customer', cc); }}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-medium text-sm text-white/80">{t.customer_name||'—'}</span>
+                    <span className={`font-bold text-sm tabular-nums ${t.type==='recharge' ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {t.type==='recharge' ? '+' : '-'}{formatMoney(t.amount)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-[11px] text-slate-500">
                       <span className={`inline-flex items-center gap-1 ${t.type==='recharge' ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {t.type==='recharge' ? <TrendingUp size={11}/> : <TrendingDown size={11}/>}
+                        {t.type==='recharge' ? <TrendingUp size={10}/> : <TrendingDown size={10}/>}
                         {t.type==='recharge' ? 'Recarga' : 'Consumo'}
                       </span>
-                    </td>
-                    <td className={`px-3 py-2.5 font-bold tabular-nums ${t.type==='recharge' ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {t.type==='recharge' ? '+' : '-'}{formatMoney(t.amount)}
-                    </td>
-                    <td className="px-3 py-2.5 text-slate-500">{t.bank||'—'}</td>
-                    <td className="px-3 py-2.5 text-slate-500">{t.reference||'—'}</td>
-                    <td className="px-3 py-2.5 text-slate-500">{t.note||'—'}</td>
+                      {t.bank && <span>· {t.bank}</span>}
+                    </div>
+                    <span className="text-[10px] text-slate-600">{formatDate(t.created_at)}</span>
+                  </div>
+                  {t.note && <div className="text-[10px] text-slate-600 mt-1 truncate">{t.note}</div>}
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* Desktop: table layout */
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-white/[0.04]">
+                    {['Fecha','Cliente','Cajero','Tipo','Monto','Método','Ref','Detalle'].map(h => (
+                      <th key={h} className="text-left px-3 py-2.5 text-slate-500 font-semibold text-[9px] uppercase tracking-[1px]">{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filtered.map(t => (
+                    <tr key={t.id} className="border-b border-white/[0.015] cursor-pointer hover:bg-white/[0.01] transition-colors" onClick={() => { const cc = customers.find(c => c.id === t.customer_id); if(cc) setView('customer', cc); }}>
+                      <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{formatDate(t.created_at)}</td>
+                      <td className="px-3 py-2.5 font-medium text-white/80">{t.customer_name||'—'}</td>
+                      <td className="px-3 py-2.5 text-slate-500">{t.cashier_name||'—'}</td>
+                      <td className="px-3 py-2.5">
+                        <span className={`inline-flex items-center gap-1 ${t.type==='recharge' ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {t.type==='recharge' ? <TrendingUp size={11}/> : <TrendingDown size={11}/>}
+                          {t.type==='recharge' ? 'Recarga' : 'Consumo'}
+                        </span>
+                      </td>
+                      <td className={`px-3 py-2.5 font-bold tabular-nums ${t.type==='recharge' ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {t.type==='recharge' ? '+' : '-'}{formatMoney(t.amount)}
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-500">{t.bank||'—'}</td>
+                      <td className="px-3 py-2.5 text-slate-500">{t.reference||'—'}</td>
+                      <td className="px-3 py-2.5 text-slate-500">{t.note||'—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
         )}
 
         <div className="h-px bg-gradient-to-r from-transparent via-white/[0.03] to-transparent mt-5 mb-3" />

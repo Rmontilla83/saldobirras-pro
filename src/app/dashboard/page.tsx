@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import { useStore } from '@/lib/store';
+import { useIsMobile } from '@/lib/useIsMobile';
 import type { Customer, Transaction } from '@/lib/types';
 import Header from '@/components/Header';
 import DashboardView from '@/components/DashboardView';
@@ -21,6 +22,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const store = useStore();
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'error' | 'warn' } | null>(null);
+  const isMobile = useIsMobile();
   const supabase = createClient();
 
   const showToast = useCallback((msg: string, type: 'ok' | 'error' | 'warn' = 'ok') => {
@@ -185,8 +187,6 @@ export default function DashboardPage() {
   const processTransaction = async (type: 'recharge' | 'consume', data: any) => {
     const res = await apiCall('/api/transactions', 'POST', { type, ...data });
     if (res?.success) {
-      // Small delay to let DB trigger update is_active
-      await new Promise(r => setTimeout(r, 200));
       await loadCustomers();
       const updated = useStore.getState().customers.find(c => c.id === data.customer_id);
       if (updated) store.setView('customer', updated);
@@ -286,8 +286,6 @@ export default function DashboardPage() {
     );
   }
 
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 700;
-
   return (
     <>
       <div className="fixed inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: "url('/fondo.jpg')" }}>
@@ -331,6 +329,7 @@ export default function DashboardPage() {
             onLoadTransactions={loadTransactions}
             onSendQREmail={sendQREmail}
             onEditCustomer={editCustomer}
+            showToast={showToast}
           />
         )}
         {store.view === 'transactions' && (

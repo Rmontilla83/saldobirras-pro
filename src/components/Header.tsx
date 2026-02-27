@@ -1,13 +1,14 @@
 'use client';
 
 import { useStore } from '@/lib/store';
+import { useIsMobile } from '@/lib/useIsMobile';
 import { LayoutDashboard, UserPlus, ArrowLeftRight, BarChart3, RefreshCw, ScanLine, Users, Smartphone, Monitor, ShieldCheck, LogOut, Package, ClipboardList } from 'lucide-react';
 
 interface HeaderProps { onRefresh: () => void; onLogout: () => void; }
 
 export default function Header({ onRefresh, onLogout }: HeaderProps) {
   const { view, setView, synced, user, pendingOrders } = useStore();
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 700;
+  const isMobile = useIsMobile();
   const isOwner = user?.role === 'owner';
   const perms = user?.permissions || {} as any;
 
@@ -28,7 +29,7 @@ export default function Header({ onRefresh, onLogout }: HeaderProps) {
               {synced ? 'Sincronizado' : 'Offline'}
             </span>
             {user && (
-              <span className="text-[10px] text-slate-600 ml-1">· {user.name}</span>
+              <span className="text-[10px] text-slate-500 ml-1">· {user.name}</span>
             )}
           </div>
         </div>
@@ -45,7 +46,7 @@ export default function Header({ onRefresh, onLogout }: HeaderProps) {
             <>
               <NavBtn icon={<ScanLine size={14}/>} active={view==='scan'} onClick={()=>setView('scan')}>Escanear</NavBtn>
               {can('dashboard') && <NavBtn icon={<Users size={14}/>} active={view==='dashboard'} onClick={()=>setView('dashboard')}>Clientes</NavBtn>}
-              {isOwner && <NavBtn icon={<ClipboardList size={14}/>} active={view==='orders'} onClick={()=>setView('orders')} badge={pendingOrders}>Pedidos</NavBtn>}
+              {can('consume') && <NavBtn icon={<ClipboardList size={14}/>} active={view==='orders'} onClick={()=>setView('orders')} badge={pendingOrders}>Pedidos</NavBtn>}
               {isOwner && can('register') && <NavBtn icon={<UserPlus size={14}/>} active={view==='register'} onClick={()=>setView('register')}>Nuevo</NavBtn>}
               {isOwner && can('transactions') && <NavBtn icon={<ArrowLeftRight size={14}/>} active={view==='transactions'} onClick={()=>setView('transactions')}>Movim.</NavBtn>}
               {isOwner && can('stats') && <NavBtn icon={<BarChart3 size={14}/>} active={view==='stats'} onClick={()=>setView('stats')}>Informes</NavBtn>}

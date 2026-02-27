@@ -84,13 +84,13 @@ body {
 
   .label {
     @apply block text-[10px] font-semibold mb-1.5 uppercase tracking-[1.5px];
-    color: #475569;
+    color: #64748B;
   }
 
   .nav-btn {
     @apply px-4 py-2.5 rounded-xl cursor-pointer font-semibold text-[11px] uppercase tracking-[0.5px] transition-all duration-200 border-none flex items-center gap-1.5;
     background: transparent;
-    color: #475569;
+    color: #64748B;
   }
   .nav-btn:hover { background: rgba(245,166,35,0.06); color: #94A3B8; }
   .nav-btn.active {
@@ -118,6 +118,15 @@ body {
 
   .icon-box {
     @apply w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    backdrop-filter: blur(40px) saturate(1.3);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.015) inset, 0 4px 32px rgba(0,0,0,0.12);
   }
 }
 
@@ -151,4 +160,14 @@ body {
   .badge {
     @apply text-[10px] px-2.5 py-1;
   }
+}
+
+/* Focus ring for keyboard accessibility */
+:focus-visible {
+  outline: 2px solid rgba(245, 166, 35, 0.5);
+  outline-offset: 2px;
+}
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid rgba(245, 166, 35, 0.5);
+  outline-offset: 2px;
 }

@@ -37,7 +37,7 @@ export default function EditCustomerModal({ customer, onSave, onClose }: Props) 
   };
 
   return (
-    <div className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-xl flex items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-xl flex items-center justify-center" onClick={onClose} onKeyDown={e => e.key === 'Escape' && onClose()}>
       <div className="bg-[#101828] border border-amber/10 rounded-3xl p-7 max-w-[400px] w-[90%] shadow-[0_32px_80px_rgba(0,0,0,0.5)] animate-[popScale_0.3s_ease]" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-sm font-bold text-white/90">Editar Cliente</h3>

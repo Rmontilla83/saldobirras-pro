@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useStore } from '@/lib/store';
+import { useIsMobile } from '@/lib/useIsMobile';
 import { formatBalance, isLowBalance } from '@/lib/utils';
 import { Users, DollarSign, Bell, ArrowLeftRight, AlertTriangle, Search, UserCheck, UserX } from 'lucide-react';
 import Avatar from './Avatar';
@@ -15,7 +16,7 @@ type Filter = 'all' | 'active' | 'inactive' | 'debt';
 export default function DashboardView({ onLoadTransactions }: Props) {
   const { customers, setView, search, setSearch } = useStore();
   const [filter, setFilter] = useState<Filter>('all');
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 700;
+  const isMobile = useIsMobile();
 
   const activeCustomers = customers.filter(c => c.balance > 0);
   const inactiveCustomers = customers.filter(c => c.balance <= 0 && !(c as any).allow_negative);
@@ -84,8 +85,8 @@ export default function DashboardView({ onLoadTransactions }: Props) {
               )}
             </div>
             <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
-              <input type="search" className="input pl-9 max-w-[200px] text-xs" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input type="search" className="input pl-9 max-w-[280px] text-xs" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} />
             </div>
           </div>
         </div>
@@ -112,7 +113,7 @@ function FilterBtn({ active, onClick, children, color }: { active: boolean; onCl
     : 'bg-amber/10 text-amber border-amber/20';
   
   return (
-    <button onClick={onClick} className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border transition-all duration-150
+    <button onClick={onClick} className={`px-3 py-2 rounded-lg text-[11px] font-semibold border transition-all duration-150
       ${active ? activeClass : 'border-transparent text-slate-500 hover:text-slate-400 hover:bg-white/[0.02]'}`}>
       {children}
     </button>

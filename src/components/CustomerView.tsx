@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useStore } from '@/lib/store';
+import { useIsMobile } from '@/lib/useIsMobile';
 import { formatBalance, formatMoney, formatDate, isLowBalance, BANKS } from '@/lib/utils';
 import { ArrowLeft, Pencil, Mail, QrCode, Minus, Plus, TrendingUp, TrendingDown, CreditCard, ShoppingCart, Trash2, Package, Link2, ExternalLink, Send } from 'lucide-react';
 import Avatar from './Avatar';
 import StatusBadge from './StatusBadge';
 import EditCustomerModal from './EditCustomerModal';
+import ConfirmModal from './ConfirmModal';
 import { createClient } from '@/lib/supabase-browser';
 import type { Transaction, Product, OrderItem, ProductCategory } from '@/lib/types';
 import { CATEGORY_LABELS } from '@/lib/types';
@@ -17,9 +19,10 @@ interface Props {
   onLoadTransactions: (customerId: string) => Promise<Transaction[]>;
   onSendQREmail: (customerId: string) => Promise<any>;
   onEditCustomer: (formData: FormData) => Promise<any>;
+  showToast: (msg: string, type?: 'ok' | 'error' | 'warn') => void;
 }
 
-export default function CustomerView({ onRecharge, onConsume, onLoadTransactions, onSendQREmail, onEditCustomer }: Props) {
+export default function CustomerView({ onRecharge, onConsume, onLoadTransactions, onSendQREmail, onEditCustomer, showToast }: Props) {
   const { selectedCustomer: c, setView, user } = useStore();
   const [rechargeAmt, setRechargeAmt] = useState('');
   const [rechargeBank, setRechargeBank] = useState('');
@@ -39,9 +42,10 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
 
   const isOwner = user?.role === 'owner';
   const can = (perm: string) => isOwner || (user?.permissions as any)?.[perm];
+  const isMobile = useIsMobile();
+  const [confirmCobrar, setConfirmCobrar] = useState(false);
 
   if (!c) return null;
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 700;
   const pct = Math.min((c.balance / (c.initial_balance || 1)) * 100, 100);
   const low = isLowBalance(c.balance, c.balance_type) || c.balance <= 0;
 
@@ -144,9 +148,9 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
     const json = await res.json();
     if (json.success) {
       clearCart();
-      alert('✓ Pedido enviado a la barra');
+      showToast('Pedido enviado a la barra');
     } else {
-      alert(json.error || 'Error al enviar pedido');
+      showToast(json.error || 'Error al enviar pedido', 'error');
     }
     setProcessing(false);
   };
@@ -192,7 +196,7 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-bold text-white/95 truncate">{c.name}</h2>
                   {can('edit_customer') && (
-                  <button onClick={() => setShowEdit(true)} className="w-7 h-7 rounded-lg bg-white/[0.03] hover:bg-amber/10 flex items-center justify-center transition-colors group">
+                  <button onClick={() => setShowEdit(true)} className="w-9 h-9 rounded-lg bg-white/[0.03] hover:bg-amber/10 flex items-center justify-center transition-colors group">
                     <Pencil size={12} className="text-slate-500 group-hover:text-amber transition-colors"/>
                   </button>
                   )}
@@ -312,7 +316,7 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                         <Trash2 size={isMobile ? 14 : 10} /> Limpiar
                       </button>
                     </div>
-                    <button onClick={handleConsumeProducts} disabled={processing}
+                    <button onClick={() => setConfirmCobrar(true)} disabled={processing}
                       className={`w-full mt-2 py-4 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 rounded-xl transition-colors
                         ${isOwner ? 'btn-red' : 'hidden'}`}>
                       {processing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> :
@@ -330,7 +334,7 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
             ) : (
               /* Manual consume */
               <>
-                <input type="number" min="0" className="input text-sm" value={manualAmt} onChange={e => setManualAmt(e.target.value)} placeholder={c.balance_type === 'money' ? '0.00' : '1'} />
+                <input type="number" min="0" inputMode="decimal" className="input text-sm" value={manualAmt} onChange={e => setManualAmt(e.target.value)} placeholder={c.balance_type === 'money' ? '0.00' : '1'} />
                 <input type="text" className="input text-sm mt-1.5" value={manualNote} onChange={e => setManualNote(e.target.value)} placeholder="Descripción..." />
                 <button onClick={handleConsumeManual} disabled={processing}
                   className="btn-red w-full mt-2.5 py-2.5 text-[10px] disabled:opacity-50">
@@ -348,7 +352,7 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
               <div className="icon-box" style={{background:'rgba(16,185,129,0.06)'}}><Plus size={15} className="text-emerald-400"/></div>
               <span className="text-xs font-bold text-white/80">Recargar</span>
             </div>
-            <input type="number" min="0" className="input text-sm" value={rechargeAmt} onChange={e => setRechargeAmt(e.target.value)} placeholder={c.balance_type === 'money' ? '0.00' : '5'} />
+            <input type="number" min="0" inputMode="decimal" className="input text-sm" value={rechargeAmt} onChange={e => setRechargeAmt(e.target.value)} placeholder={c.balance_type === 'money' ? '0.00' : '5'} />
             <select className="input text-sm mt-1.5" value={rechargeBank} onChange={e => setRechargeBank(e.target.value)}>
               <option value="">Método de pago</option>
               {BANKS.map(b => <option key={b} value={b}>{b}</option>)}
@@ -401,7 +405,7 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                 const baseHost = window.location.hostname.replace(/^(app\.|www\.)/, '');
                 const url = `https://portal.${baseHost}/portal?qr=${c.qr_code}`;
                 navigator.clipboard.writeText(url);
-                alert('Link copiado al portapapeles');
+                showToast('Link copiado al portapapeles');
               }} className="btn-outline w-full text-[10px] px-3 py-2 flex items-center justify-center gap-1.5">
                 <Link2 size={12}/> Copiar Link del Portal
               </button>
@@ -418,8 +422,8 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                     body: JSON.stringify({ customer_id: c.id, portal_url: url }),
                   });
                   const json = await res.json();
-                  if (json.success) alert('✓ Invitación enviada por correo');
-                  else alert(json.error || 'Error al enviar');
+                  if (json.success) showToast('Invitación enviada por correo');
+                  else showToast(json.error || 'Error al enviar', 'error');
                 }} className="btn-outline w-full mt-1.5 text-[10px] px-3 py-2 flex items-center justify-center gap-1.5">
                   <ExternalLink size={12}/> Enviar Invitación por Correo
                 </button>
@@ -462,6 +466,17 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
         <EditCustomerModal customer={c}
           onSave={async (formData) => { await onEditCustomer(formData); setShowEdit(false); }}
           onClose={() => setShowEdit(false)} />
+      )}
+
+      {confirmCobrar && (
+        <ConfirmModal
+          title={`Cobrar $${cartTotal.toFixed(2)}`}
+          message={`Se descontará $${cartTotal.toFixed(2)} del saldo de ${c.name}. ${cartItems.map(i => `${i.qty}x ${i.name}`).join(', ')}.`}
+          confirmLabel="Cobrar"
+          variant="danger"
+          onConfirm={() => { setConfirmCobrar(false); handleConsumeProducts(); }}
+          onCancel={() => setConfirmCobrar(false)}
+        />
       )}
     </div>
   );

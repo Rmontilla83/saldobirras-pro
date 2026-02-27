@@ -217,12 +217,12 @@ export default function UsersView({ showToast }: Props) {
                 </div>
                 <div className="flex items-center gap-1">
                   {u.id !== currentUser?.id && (
-                    <button onClick={() => toggleActive(u)} className="w-8 h-8 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center transition-colors" title={u.is_active !== false ? 'Desactivar' : 'Activar'}>
-                      <Power size={13} className={u.is_active !== false ? 'text-emerald-400' : 'text-red-400'} />
+                    <button onClick={() => toggleActive(u)} className="w-10 h-10 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center transition-colors" title={u.is_active !== false ? 'Desactivar' : 'Activar'}>
+                      <Power size={14} className={u.is_active !== false ? 'text-emerald-400' : 'text-red-400'} />
                     </button>
                   )}
-                  <button onClick={() => openEdit(u)} className="w-8 h-8 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center transition-colors" title="Editar">
-                    <Pencil size={13} className="text-slate-400" />
+                  <button onClick={() => openEdit(u)} className="w-10 h-10 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center transition-colors" title="Editar">
+                    <Pencil size={14} className="text-slate-400" />
                   </button>
                 </div>
               </div>

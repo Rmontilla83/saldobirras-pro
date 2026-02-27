@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase-browser';
 import { useStore } from '@/lib/store';
 import { ClipboardList, Clock, ChefHat, CheckCircle, XCircle, RefreshCw, PackageCheck, BellRing } from 'lucide-react';
+import ConfirmModal from './ConfirmModal';
 
 interface Order {
   id: string;
@@ -63,9 +64,10 @@ export default function OrdersView({ showToast }: Props) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('active');
   const [flash, setFlash] = useState(false);
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const supabase = createClient();
   const { user, setPendingOrders, view } = useStore();
-  const isOwner = user?.role === 'owner';
+  const canChangeStatus = user?.role === 'owner';
   const prevPendingRef = useRef<string[]>([]);
   const hasInteracted = useRef(false);
 
@@ -199,7 +201,7 @@ export default function OrdersView({ showToast }: Props) {
       </div>
 
       {/* Filter */}
-      <div className="flex gap-1 mb-4">
+      <div className="flex gap-1 mb-4 overflow-x-auto pb-1 scrollbar-hide">
         {[
           { key: 'active', label: `Activos (${pendingCount + preparingCount + readyCount})` },
           { key: 'pending', label: `Pendientes (${pendingCount})` },
@@ -209,7 +211,7 @@ export default function OrdersView({ showToast }: Props) {
           { key: 'all', label: 'Todos' },
         ].map(f => (
           <button key={f.key} onClick={() => setFilter(f.key)}
-            className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border transition-all
+            className={`px-3 py-2 rounded-lg text-[11px] font-semibold border transition-all whitespace-nowrap flex-shrink-0
               ${filter === f.key ? 'bg-amber/10 text-amber border-amber/20' : 'border-transparent text-slate-500'}`}>
             {f.label}
           </button>
@@ -264,26 +266,26 @@ export default function OrdersView({ showToast }: Props) {
 
                 {order.note && <div className="text-[10px] text-slate-500 italic mb-3">"{order.note}"</div>}
 
-                {/* Actions — Barra/Owner: pending→preparing→ready, Cajera: ready→delivered */}
-                {order.status === 'pending' && isOwner && (
+                {/* Actions — Owner/Admin can change status, cajeras see read-only */}
+                {order.status === 'pending' && canChangeStatus && (
                   <div className="flex gap-2">
                     <button onClick={() => updateStatus(order.id, 'preparing')}
                       className="flex-1 py-2.5 bg-blue-500/10 text-blue-400 rounded-xl text-[10px] font-semibold flex items-center justify-center gap-1 hover:bg-blue-500/20 transition-colors">
                       <ChefHat size={12} /> Preparar
                     </button>
-                    <button onClick={() => updateStatus(order.id, 'cancelled')}
+                    <button onClick={() => setCancelOrderId(order.id)}
                       className="py-2.5 px-3 bg-red-500/10 text-red-400 rounded-xl text-[10px] hover:bg-red-500/20 transition-colors">
                       <XCircle size={12} />
                     </button>
                   </div>
                 )}
-                {order.status === 'preparing' && isOwner && (
+                {order.status === 'preparing' && canChangeStatus && (
                   <button onClick={() => updateStatus(order.id, 'ready')}
                     className="w-full py-2.5 bg-purple-500/10 text-purple-400 rounded-xl text-[10px] font-semibold flex items-center justify-center gap-1 hover:bg-purple-500/20 transition-colors">
                     <PackageCheck size={12} /> Marcar Listo para Entrega
                   </button>
                 )}
-                {order.status === 'ready' && (
+                {order.status === 'ready' && canChangeStatus && (
                   <button onClick={() => updateStatus(order.id, 'delivered')}
                     className="w-full py-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl text-[10px] font-semibold flex items-center justify-center gap-1 hover:bg-emerald-500/20 transition-colors">
                     <CheckCircle size={12} /> Marcar Entregado
@@ -293,6 +295,17 @@ export default function OrdersView({ showToast }: Props) {
             );
           })}
         </div>
+      )}
+
+      {cancelOrderId && (
+        <ConfirmModal
+          title="Cancelar Pedido"
+          message="¿Estás seguro de cancelar este pedido? Se liberará el saldo retenido del cliente."
+          confirmLabel="Cancelar Pedido"
+          variant="danger"
+          onConfirm={() => { updateStatus(cancelOrderId, 'cancelled'); setCancelOrderId(null); }}
+          onCancel={() => setCancelOrderId(null)}
+        />
       )}
     </div>
   );

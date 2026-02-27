@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase-browser';
 import { Package, Plus, Pencil, X, Save, Trash2, Eye, EyeOff, Beer, Wine, Coffee, UtensilsCrossed, CircleDot } from 'lucide-react';
 import type { Product, ProductCategory } from '@/lib/types';
 import { CATEGORY_LABELS } from '@/lib/types';
+import ConfirmModal from './ConfirmModal';
 
 const CATEGORY_ICONS: Record<ProductCategory, React.ReactNode> = {
   beer: <Beer size={14} />,
@@ -34,6 +35,7 @@ export default function ProductsView({ showToast }: Props) {
   const [fPrice, setFPrice] = useState('');
   const [fAvailable, setFAvailable] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
 
   const supabase = createClient();
 
@@ -90,11 +92,11 @@ export default function ProductsView({ showToast }: Props) {
     if (res?.success) { load(); showToast(res.data.is_available ? '✓ Producto disponible' : '✓ Producto oculto', 'ok'); }
   };
 
-  const deleteProduct = async (p: Product) => {
-    if (!confirm(`¿Eliminar "${p.name}"?`)) return;
+  const handleDeleteProduct = async (p: Product) => {
     const res = await apiCall('DELETE', undefined, `?id=${p.id}`);
     if (res?.success) { showToast('✓ Producto eliminado', 'ok'); load(); }
     else showToast(res?.error || 'Error', 'error');
+    setDeleteProduct(null);
   };
 
   const filtered = filterCat === 'all' ? products : products.filter(p => p.category === filterCat);
@@ -146,14 +148,14 @@ export default function ProductsView({ showToast }: Props) {
                   {p.description && <div className="text-[10px] text-slate-600 truncate">{p.description}</div>}
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <button onClick={() => toggleAvailable(p)} className="w-7 h-7 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center" title={p.is_available ? 'Ocultar' : 'Mostrar'}>
-                    {p.is_available ? <Eye size={12} className="text-emerald-400" /> : <EyeOff size={12} className="text-red-400" />}
+                  <button onClick={() => toggleAvailable(p)} className="w-9 h-9 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center" title={p.is_available ? 'Ocultar' : 'Mostrar'}>
+                    {p.is_available ? <Eye size={14} className="text-emerald-400" /> : <EyeOff size={14} className="text-red-400" />}
                   </button>
-                  <button onClick={() => openEdit(p)} className="w-7 h-7 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center">
-                    <Pencil size={12} className="text-slate-400" />
+                  <button onClick={() => openEdit(p)} className="w-9 h-9 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center">
+                    <Pencil size={14} className="text-slate-400" />
                   </button>
-                  <button onClick={() => deleteProduct(p)} className="w-7 h-7 rounded-lg bg-white/[0.02] hover:bg-red-500/10 flex items-center justify-center">
-                    <Trash2 size={12} className="text-slate-600 hover:text-red-400" />
+                  <button onClick={() => setDeleteProduct(p)} className="w-9 h-9 rounded-lg bg-white/[0.02] hover:bg-red-500/10 flex items-center justify-center">
+                    <Trash2 size={14} className="text-red-400" />
                   </button>
                 </div>
               </div>
@@ -210,6 +212,17 @@ export default function ProductsView({ showToast }: Props) {
             </div>
           </div>
         </div>
+      )}
+
+      {deleteProduct && (
+        <ConfirmModal
+          title="Eliminar Producto"
+          message={`¿Estás seguro de eliminar "${deleteProduct.name}"? Esta acción no se puede deshacer.`}
+          confirmLabel="Eliminar"
+          variant="danger"
+          onConfirm={() => handleDeleteProduct(deleteProduct)}
+          onCancel={() => setDeleteProduct(null)}
+        />
       )}
     </div>
   );
