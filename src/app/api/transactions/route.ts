@@ -120,9 +120,9 @@ export async function POST(req: NextRequest) {
     if (customer?.email) {
       const newBalance = result.new_balance;
       if (newBalance <= 0) {
-        sendZeroBalanceEmail(customer.email, customer.name, customer.balance_type).catch(console.error);
+        sendZeroBalanceEmail(customer.email, customer.name, customer.balance_type, customer.qr_code).catch(console.error);
       } else if (isLowBalance(newBalance, customer.balance_type)) {
-        sendLowBalanceEmail(customer.email, customer.name, newBalance, customer.balance_type).catch(console.error);
+        sendLowBalanceEmail(customer.email, customer.name, newBalance, customer.balance_type, customer.qr_code).catch(console.error);
       }
     }
 

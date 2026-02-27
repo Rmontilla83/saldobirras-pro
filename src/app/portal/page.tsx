@@ -121,7 +121,7 @@ export default function PortalPage() {
   const categories = ['all', ...Array.from(new Set(products.filter(p => p.is_available).map(p => p.category)))];
 
   return (
-    <div className="min-h-screen bg-[#060A13] text-white">
+    <div className="min-h-screen bg-[#060A13] text-white overflow-x-hidden">
 
       {/* ══════════════════════════════════════════
           STEP 1: LOGIN — Big, friendly, simple
@@ -223,13 +223,13 @@ export default function PortalPage() {
           STEP 2: MENU — Visual, big touch targets
          ══════════════════════════════════════════ */}
       {step === 'menu' && customer && (
-        <div className="pb-28">
+        <div style={{ paddingBottom: 'calc(112px + env(safe-area-inset-bottom, 0px))' }}>
           {/* Welcome header */}
           <div className="bg-gradient-to-b from-[#0D1424] to-[#060A13] px-5 pt-5 pb-4">
             <div className="max-w-lg mx-auto">
               <div className="flex items-center justify-between mb-4">
                 <button onClick={() => { setStep('scan'); setCustomer(null); setCart({}); setPinInput(''); }}
-                  className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center active:bg-white/10">
+                  className="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center active:bg-white/10">
                   <ArrowLeft size={20} className="text-slate-400" />
                 </button>
                 <div className="text-right">
@@ -341,7 +341,8 @@ export default function PortalPage() {
 
           {/* Floating cart button */}
           {cartCount > 0 && (
-            <div className="fixed bottom-0 left-0 right-0 p-4 z-50 bg-gradient-to-t from-[#060A13] via-[#060A13] to-transparent pt-8">
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-[#060A13] via-[#060A13] to-transparent pt-8 px-4"
+              style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
               <div className="max-w-lg mx-auto">
                 <button onClick={() => setStep('confirm')}
                   className="w-full py-5 bg-amber text-black font-extrabold rounded-2xl text-lg flex items-center justify-center gap-3 shadow-xl shadow-amber/25 active:scale-[0.98] transition-transform">
@@ -359,11 +360,11 @@ export default function PortalPage() {
           STEP 3: CONFIRM — Clear summary
          ══════════════════════════════════════════ */}
       {step === 'confirm' && customer && (
-        <div className="max-w-lg mx-auto px-5 py-5">
+        <div className="max-w-lg mx-auto px-4 py-5" style={{ paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))' }}>
           {/* Header */}
           <div className="flex items-center gap-3 mb-6">
             <button onClick={() => setStep('menu')}
-              className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center active:bg-white/10">
+              className="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center active:bg-white/10">
               <ArrowLeft size={20} className="text-slate-400" />
             </button>
             <div>
@@ -375,37 +376,37 @@ export default function PortalPage() {
           {/* Items */}
           <div className="bg-[#0D1424] rounded-3xl border border-white/5 overflow-hidden mb-4">
             {cartItems.map(({ product: p, qty }, i) => (
-              <div key={p.id} className={`flex items-center gap-4 px-5 py-4 ${i < cartItems.length - 1 ? 'border-b border-white/[0.04]' : ''}`}>
-                <span className="text-2xl">{CAT_EMOJI[p.category] || '📦'}</span>
-                <div className="flex-1">
-                  <div className="text-base font-bold text-white/90">{p.name}</div>
+              <div key={p.id} className={`flex items-center gap-3 px-4 py-4 ${i < cartItems.length - 1 ? 'border-b border-white/[0.04]' : ''}`}>
+                <span className="text-2xl flex-shrink-0">{CAT_EMOJI[p.category] || '📦'}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-base font-bold text-white/90 truncate">{p.name}</div>
                   <div className="text-sm text-slate-500">{qty} × ${Number(p.price).toFixed(2)}</div>
                 </div>
-                <div className="text-base font-extrabold text-white/80">${(p.price * qty).toFixed(2)}</div>
+                <div className="text-base font-extrabold text-white/80 flex-shrink-0">${(p.price * qty).toFixed(2)}</div>
               </div>
             ))}
 
             {/* Total */}
-            <div className="flex items-center justify-between px-5 py-4 bg-amber/[0.04] border-t border-amber/10">
+            <div className="flex items-center justify-between px-4 py-4 bg-amber/[0.04] border-t border-amber/10">
               <span className="text-lg font-extrabold">Total</span>
               <span className="text-2xl font-extrabold text-amber">${cartTotal.toFixed(2)}</span>
             </div>
           </div>
 
           {/* Balance check */}
-          <div className={`rounded-2xl p-5 mb-4 border-2 flex items-center gap-4
+          <div className={`rounded-2xl p-4 mb-4 border-2 flex items-center gap-3
             ${cartTotal <= customer.available_balance
               ? 'bg-emerald-500/5 border-emerald-500/15'
               : 'bg-red-500/5 border-red-500/15'}`}>
-            <Wallet size={28} className={cartTotal <= customer.available_balance ? 'text-emerald-400' : 'text-red-400'} />
-            <div className="flex-1">
+            <Wallet size={24} className={`flex-shrink-0 ${cartTotal <= customer.available_balance ? 'text-emerald-400' : 'text-red-400'}`} />
+            <div className="flex-1 min-w-0">
               <div className="text-xs text-slate-500">Tu saldo disponible</div>
               <div className={`text-xl font-extrabold ${cartTotal <= customer.available_balance ? 'text-emerald-400' : 'text-red-400'}`}>
                 ${customer.available_balance.toFixed(2)}
               </div>
             </div>
             {cartTotal <= customer.available_balance && (
-              <CheckCircle size={28} className="text-emerald-400" />
+              <CheckCircle size={24} className="text-emerald-400 flex-shrink-0" />
             )}
           </div>
 
