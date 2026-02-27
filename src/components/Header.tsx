@@ -1,8 +1,11 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { useIsMobile } from '@/lib/useIsMobile';
-import { LayoutDashboard, UserPlus, ArrowLeftRight, BarChart3, RefreshCw, ScanLine, Users, Smartphone, Monitor, ShieldCheck, LogOut, Package, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, UserPlus, ArrowLeftRight, BarChart3, RefreshCw, ScanLine, Users, Smartphone, Monitor, ShieldCheck, LogOut, Package, ClipboardList, Sparkles } from 'lucide-react';
+
+const LATEST_VERSION = 'v9.0';
 
 interface HeaderProps { onRefresh: () => void; onLogout: () => void; }
 
@@ -11,6 +14,20 @@ export default function Header({ onRefresh, onLogout }: HeaderProps) {
   const isMobile = useIsMobile();
   const isOwner = user?.role === 'owner';
   const perms = user?.permissions || {} as any;
+  const [hasNewUpdates, setHasNewUpdates] = useState(false);
+
+  useEffect(() => {
+    if (isOwner) {
+      const seen = localStorage.getItem('changelog_seen_version');
+      setHasNewUpdates(seen !== LATEST_VERSION);
+    }
+  }, [isOwner]);
+
+  const handleOpenChangelog = () => {
+    localStorage.setItem('changelog_seen_version', LATEST_VERSION);
+    setHasNewUpdates(false);
+    setView('changelog');
+  };
 
   // Check if user has permission for a view
   const can = (perm: string) => isOwner || perms[perm];
@@ -52,6 +69,7 @@ export default function Header({ onRefresh, onLogout }: HeaderProps) {
               {isOwner && can('stats') && <NavBtn icon={<BarChart3 size={14}/>} active={view==='stats'} onClick={()=>setView('stats')}>Informes</NavBtn>}
               {isOwner && <NavBtn icon={<Package size={14}/>} active={view==='products'} onClick={()=>setView('products')}>Productos</NavBtn>}
               {isOwner && <NavBtn icon={<ShieldCheck size={14}/>} active={view==='users'} onClick={()=>setView('users')}>Usuarios</NavBtn>}
+              {isOwner && <NavBtn icon={<Sparkles size={14}/>} active={view==='changelog'} onClick={handleOpenChangelog} dot={hasNewUpdates}>Novedades</NavBtn>}
               <NavBtn icon={<LogOut size={14}/>} active={false} onClick={onLogout}></NavBtn>
             </>
           ) : (
@@ -63,6 +81,7 @@ export default function Header({ onRefresh, onLogout }: HeaderProps) {
               {can('stats') && <NavBtn icon={<BarChart3 size={14}/>} active={view==='stats'} onClick={()=>setView('stats')}>Informes</NavBtn>}
               {isOwner && <NavBtn icon={<Package size={14}/>} active={view==='products'} onClick={()=>setView('products')}>Productos</NavBtn>}
               {isOwner && <NavBtn icon={<ShieldCheck size={14}/>} active={view==='users'} onClick={()=>setView('users')}>Usuarios</NavBtn>}
+              {isOwner && <NavBtn icon={<Sparkles size={14}/>} active={view==='changelog'} onClick={handleOpenChangelog} dot={hasNewUpdates}>Novedades</NavBtn>}
               <NavBtn icon={<RefreshCw size={14}/>} active={false} onClick={onRefresh}></NavBtn>
               <NavBtn icon={<LogOut size={14}/>} active={false} onClick={onLogout}></NavBtn>
             </>
@@ -73,7 +92,7 @@ export default function Header({ onRefresh, onLogout }: HeaderProps) {
   );
 }
 
-function NavBtn({ icon, active, onClick, children, badge }: { icon: React.ReactNode; active: boolean; onClick: () => void; children?: React.ReactNode; badge?: number }) {
+function NavBtn({ icon, active, onClick, children, badge, dot }: { icon: React.ReactNode; active: boolean; onClick: () => void; children?: React.ReactNode; badge?: number; dot?: boolean }) {
   return (
     <button onClick={onClick} className={`nav-btn ${active ? 'active' : ''} relative`}>
       {icon}{children}
@@ -81,6 +100,9 @@ function NavBtn({ icon, active, onClick, children, badge }: { icon: React.ReactN
         <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]">
           {badge}
         </span>
+      )}
+      {dot && (
+        <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.6)]" />
       )}
     </button>
   );
