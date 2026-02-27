@@ -26,15 +26,9 @@ export default function CajeraView({ onConsume, showToast }: Props) {
   const [processing, setProcessing] = useState(false);
   const [confirmAction, setConfirmAction] = useState<'cobrar' | 'enviar' | null>(null);
 
-  if (!c) return null;
-
-  const balanceHeld = (c as any).balance_held || 0;
-  const availableBalance = c.balance - balanceHeld;
-  const low = isLowBalance(c.balance, c.balance_type) || c.balance <= 0;
-  const balColor = c.balance <= 0 ? 'text-red-400' : low ? 'text-yellow-500' : 'text-emerald-400';
-
   // Auto-refresh customer data every 8s
   useEffect(() => {
+    if (!c) return;
     const refreshCustomer = async () => {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
@@ -50,7 +44,7 @@ export default function CajeraView({ onConsume, showToast }: Props) {
     };
     const iv = setInterval(refreshCustomer, 8000);
     return () => clearInterval(iv);
-  }, [c.id, c.balance]);
+  }, [c?.id, c?.balance]);
 
   // Load products
   useEffect(() => {
@@ -66,6 +60,13 @@ export default function CajeraView({ onConsume, showToast }: Props) {
     };
     loadProducts();
   }, []);
+
+  if (!c) return null;
+
+  const balanceHeld = (c as any).balance_held || 0;
+  const availableBalance = c.balance - balanceHeld;
+  const low = isLowBalance(c.balance, c.balance_type) || c.balance <= 0;
+  const balColor = c.balance <= 0 ? 'text-red-400' : low ? 'text-yellow-500' : 'text-emerald-400';
 
   // Cart helpers
   const addToCart = (productId: string) => {
