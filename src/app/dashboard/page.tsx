@@ -266,10 +266,37 @@ export default function DashboardPage() {
   };
 
   const handleLogout = async () => {
+    localStorage.removeItem('session_id');
     await supabase.auth.signOut();
     store.clearAuth();
     router.replace('/login');
   };
+
+  // Single-session enforcement: validate session every 15s (non-owner only)
+  useEffect(() => {
+    if (!store.user || store.user.role === 'owner') return;
+    const sessionId = localStorage.getItem('session_id');
+    if (!sessionId) return;
+
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      try {
+        const res = await fetch(`/api/sessions?session_id=${encodeURIComponent(sessionId)}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const json = await res.json();
+        if (json.success && json.data?.valid === false) {
+          localStorage.removeItem('session_id');
+          await supabase.auth.signOut();
+          store.clearAuth();
+          router.replace('/login?kicked=1');
+        }
+      } catch {}
+    };
+    const iv = setInterval(checkSession, 15000);
+    return () => clearInterval(iv);
+  }, [store.user]);
 
   const loadTransactions = async (customerId?: string) => {
     const url = customerId

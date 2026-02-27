@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import { LogIn, Mail, Lock } from 'lucide-react';
@@ -12,13 +12,29 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('kicked=1')) {
+      setError('Tu sesión fue cerrada porque iniciaste sesión en otro dispositivo');
+    }
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(''); setLoading(true);
     const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (authError) { setError('Credenciales incorrectas'); return; }
+    if (authError || !data.session) { setError('Credenciales incorrectas'); return; }
+
+    // Register single-session ID (non-owner users get previous sessions invalidated)
+    const sessionId = crypto.randomUUID();
+    localStorage.setItem('session_id', sessionId);
+    fetch('/api/sessions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${data.session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    }).catch(() => {});
+
     router.replace('/dashboard');
   };
 
