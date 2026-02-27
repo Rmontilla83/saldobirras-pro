@@ -25,6 +25,40 @@ const TYPE_CONFIG: Record<ChangeType, { label: string; emoji: string; bg: string
 
 const CHANGELOG: Release[] = [
   {
+    version: 'v9.3',
+    date: '2026-02-27',
+    title: 'Sesión única por dispositivo',
+    changes: [
+      { type: 'security', text: 'Cada cajero/auditor solo puede tener sesión activa en un dispositivo a la vez' },
+      { type: 'security', text: 'Al iniciar sesión en otro dispositivo, el anterior se desconecta automáticamente' },
+      { type: 'new', text: 'Mensaje claro al ser desconectado: "Tu sesión fue cerrada porque iniciaste sesión en otro dispositivo"' },
+      { type: 'improve', text: 'El Owner puede iniciar sesión en múltiples dispositivos sin restricción' },
+    ]
+  },
+  {
+    version: 'v9.2',
+    date: '2026-02-27',
+    title: 'Vista cajera móvil — cobro rápido',
+    changes: [
+      { type: 'new', text: 'Flujo de cobro en 3 pasos para cajeras en móvil: perfil → productos → resumen' },
+      { type: 'new', text: 'Saldo del cliente en tamaño gigante (56px) — visible de un vistazo' },
+      { type: 'new', text: 'Botones COBRAR (verde) y ENVIAR PEDIDO (azul) claramente diferenciados' },
+      { type: 'new', text: 'Barra inferior fija con resumen del carrito y botón "VER PEDIDO"' },
+      { type: 'improve', text: 'Productos con botones grandes touch-friendly (80px mínimo) optimizados para una mano' },
+      { type: 'improve', text: 'Vibración háptica al agregar producto al carrito' },
+      { type: 'improve', text: 'Auto-retorno a escanear después de cobrar o enviar pedido' },
+      { type: 'fix', text: 'Corregido crash al abrir cliente en móvil con rol cajera' },
+    ]
+  },
+  {
+    version: 'v9.1',
+    date: '2026-02-26',
+    title: 'Pestaña Novedades',
+    changes: [
+      { type: 'new', text: 'Sección de Novedades con historial de cambios profesional' },
+    ]
+  },
+  {
     version: 'v9.0',
     date: '2026-02-26',
     title: 'Auditoría UX completa — 24 mejoras',
