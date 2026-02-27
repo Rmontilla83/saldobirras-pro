@@ -9,6 +9,7 @@ import Avatar from './Avatar';
 import StatusBadge from './StatusBadge';
 import EditCustomerModal from './EditCustomerModal';
 import ConfirmModal from './ConfirmModal';
+import CajeraView from './CajeraView';
 import { createClient } from '@/lib/supabase-browser';
 import type { Transaction, Product, OrderItem, ProductCategory } from '@/lib/types';
 import { CATEGORY_LABELS } from '@/lib/types';
@@ -43,9 +44,11 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
   const isOwner = user?.role === 'owner';
   const can = (perm: string) => isOwner || (user?.permissions as any)?.[perm];
   const isMobile = useIsMobile();
+  const isCajeraMode = isMobile && user?.role === 'cashier';
   const [confirmCobrar, setConfirmCobrar] = useState(false);
 
   if (!c) return null;
+  if (isCajeraMode) return <CajeraView onConsume={onConsume} showToast={showToast} />;
   const pct = Math.min((c.balance / (c.initial_balance || 1)) * 100, 100);
   const low = isLowBalance(c.balance, c.balance_type) || c.balance <= 0;
 
