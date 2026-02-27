@@ -26,7 +26,7 @@ const TYPE_CONFIG: Record<ChangeType, { label: string; emoji: string; bg: string
 const CHANGELOG: Release[] = [
   {
     version: 'v9.3',
-    date: '2026-02-27',
+    date: '2026-02-27 15:30',
     title: 'Sesión única por dispositivo',
     changes: [
       { type: 'security', text: 'Cada cajero/auditor solo puede tener sesión activa en un dispositivo a la vez' },
@@ -37,7 +37,7 @@ const CHANGELOG: Release[] = [
   },
   {
     version: 'v9.2',
-    date: '2026-02-27',
+    date: '2026-02-27 13:00',
     title: 'Vista cajera móvil — cobro rápido',
     changes: [
       { type: 'new', text: 'Flujo de cobro en 3 pasos para cajeras en móvil: perfil → productos → resumen' },
@@ -52,7 +52,7 @@ const CHANGELOG: Release[] = [
   },
   {
     version: 'v9.1',
-    date: '2026-02-26',
+    date: '2026-02-26 22:00',
     title: 'Pestaña Novedades',
     changes: [
       { type: 'new', text: 'Sección de Novedades con historial de cambios profesional' },
@@ -60,7 +60,7 @@ const CHANGELOG: Release[] = [
   },
   {
     version: 'v9.0',
-    date: '2026-02-26',
+    date: '2026-02-26 20:00',
     title: 'Auditoría UX completa — 24 mejoras',
     changes: [
       { type: 'new', text: 'Modal de confirmación antes de cobrar — evita cobros accidentales' },
@@ -77,7 +77,7 @@ const CHANGELOG: Release[] = [
   },
   {
     version: 'v8.7',
-    date: '2026-02-26',
+    date: '2026-02-26 17:30',
     title: 'Carnet en formato PNG',
     changes: [
       { type: 'improve', text: 'Carnet ahora se descarga como imagen PNG en vez de PDF' },
@@ -86,7 +86,7 @@ const CHANGELOG: Release[] = [
   },
   {
     version: 'v8.5',
-    date: '2026-02-26',
+    date: '2026-02-26 15:00',
     title: 'Carnet premium con logos Marinos',
     changes: [
       { type: 'new', text: 'Logo BirraSport prominente en el carnet' },
@@ -97,7 +97,7 @@ const CHANGELOG: Release[] = [
   },
   {
     version: 'v8.4',
-    date: '2026-02-26',
+    date: '2026-02-26 13:00',
     title: 'Email de bienvenida completo',
     changes: [
       { type: 'new', text: 'Correo de registro incluye invitación al portal' },
@@ -108,7 +108,7 @@ const CHANGELOG: Release[] = [
   },
   {
     version: 'v8.3',
-    date: '2026-02-26',
+    date: '2026-02-26 11:30',
     title: 'Fix registro de clientes',
     changes: [
       { type: 'fix', text: 'Error "zone column not found" al registrar cliente' },
@@ -116,7 +116,7 @@ const CHANGELOG: Release[] = [
   },
   {
     version: 'v8.2',
-    date: '2026-02-26',
+    date: '2026-02-26 10:00',
     title: 'Notificaciones persistentes en escritorio',
     changes: [
       { type: 'new', text: 'Barra amarilla persistente en desktop cuando hay pedidos pendientes' },
@@ -126,7 +126,7 @@ const CHANGELOG: Release[] = [
   },
   {
     version: 'v8.0',
-    date: '2026-02-24',
+    date: '2026-02-24 16:00',
     title: 'Fase F — Notificaciones, PIN y PWA',
     changes: [
       { type: 'new', text: 'Login con PIN de 4 dígitos en el portal — sin escribir códigos largos' },
@@ -140,7 +140,7 @@ const CHANGELOG: Release[] = [
   },
   {
     version: 'v7.0',
-    date: '2026-02-22',
+    date: '2026-02-22 14:00',
     title: 'Fase E — Portal de clientes y pedidos',
     changes: [
       { type: 'new', text: 'Portal de clientes en portal.birrasport.com' },
@@ -153,7 +153,7 @@ const CHANGELOG: Release[] = [
   },
   {
     version: 'v6.0',
-    date: '2026-02-20',
+    date: '2026-02-20 11:00',
     title: 'Fase D — Correos automáticos y subdominios',
     changes: [
       { type: 'new', text: 'Correos automáticos de recarga, saldo bajo y saldo cero' },
@@ -165,7 +165,7 @@ const CHANGELOG: Release[] = [
   },
   {
     version: 'v5.0',
-    date: '2026-02-18',
+    date: '2026-02-18 10:00',
     title: 'Fase C — Productos, usuarios y permisos',
     changes: [
       { type: 'new', text: 'Gestión de productos con precios y categorías' },
@@ -177,7 +177,7 @@ const CHANGELOG: Release[] = [
   },
   {
     version: 'v3.0',
-    date: '2026-02-15',
+    date: '2026-02-15 15:00',
     title: 'Fase B — Transacciones y QR',
     changes: [
       { type: 'new', text: 'Sistema de recargas con métodos de pago' },
@@ -190,7 +190,7 @@ const CHANGELOG: Release[] = [
   },
   {
     version: 'v1.0',
-    date: '2026-02-12',
+    date: '2026-02-12 09:00',
     title: 'Fase A — Sistema base',
     changes: [
       { type: 'new', text: 'Registro de clientes con foto' },
@@ -204,8 +204,15 @@ const CHANGELOG: Release[] = [
 
 function formatDateES(dateStr: string) {
   const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-  const d = new Date(dateStr + 'T12:00:00');
-  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  const hasTime = dateStr.includes(' ');
+  const d = hasTime ? new Date(dateStr.replace(' ', 'T') + ':00') : new Date(dateStr + 'T12:00:00');
+  const date = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  if (!hasTime) return date;
+  const h = d.getHours();
+  const m = d.getMinutes().toString().padStart(2, '0');
+  const ampm = h >= 12 ? 'pm' : 'am';
+  const h12 = h % 12 || 12;
+  return `${date} · ${h12}:${m} ${ampm}`;
 }
 
 function Badge({ type }: { type: ChangeType }) {
