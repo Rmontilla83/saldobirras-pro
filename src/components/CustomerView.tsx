@@ -47,15 +47,14 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
   const isCajeraMode = isMobile && user?.role === 'cashier';
   const [confirmCobrar, setConfirmCobrar] = useState(false);
 
-  if (!c) return null;
-  if (isCajeraMode) return <CajeraView onConsume={onConsume} showToast={showToast} />;
-  const pct = Math.min((c.balance / (c.initial_balance || 1)) * 100, 100);
-  const low = isLowBalance(c.balance, c.balance_type) || c.balance <= 0;
-
-  useEffect(() => { onLoadTransactions(c.id).then(setTransactions); }, [c.id, c.balance]);
-
-  // Auto-refresh customer data every 8s to catch order deliveries
+  // All hooks must be called before any early returns (React rules of hooks)
   useEffect(() => {
+    if (!c) return;
+    onLoadTransactions(c.id).then(setTransactions);
+  }, [c?.id, c?.balance]);
+
+  useEffect(() => {
+    if (!c) return;
     const refreshCustomer = async () => {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
@@ -71,9 +70,8 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
     };
     const iv = setInterval(refreshCustomer, 8000);
     return () => clearInterval(iv);
-  }, [c.id, c.balance]);
+  }, [c?.id, c?.balance]);
 
-  // Load products
   useEffect(() => {
     const loadProducts = async () => {
       const supabase = createClient();
@@ -89,16 +87,20 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
   }, []);
 
   useEffect(() => {
-    if (qrRef.current && typeof window !== 'undefined') {
-      qrRef.current.innerHTML = '';
-      import('qrcode').then(QRCode => {
-        const canvas = document.createElement('canvas');
-        // @ts-ignore
-        QRCode.toCanvas(canvas, c.qr_code, { width: 130, color: { dark: '#1B2A4A', light: '#FFFFFF' }, margin: 1 });
-        qrRef.current?.appendChild(canvas);
-      });
-    }
-  }, [c.qr_code]);
+    if (!c || !qrRef.current || typeof window === 'undefined') return;
+    qrRef.current.innerHTML = '';
+    import('qrcode').then(QRCode => {
+      const canvas = document.createElement('canvas');
+      // @ts-ignore
+      QRCode.toCanvas(canvas, c.qr_code, { width: 130, color: { dark: '#1B2A4A', light: '#FFFFFF' }, margin: 1 });
+      qrRef.current?.appendChild(canvas);
+    });
+  }, [c?.qr_code]);
+
+  if (!c) return null;
+  if (isCajeraMode) return <CajeraView onConsume={onConsume} showToast={showToast} />;
+  const pct = Math.min((c.balance / (c.initial_balance || 1)) * 100, 100);
+  const low = isLowBalance(c.balance, c.balance_type) || c.balance <= 0;
 
   // Cart helpers
   const addToCart = (productId: string) => {
