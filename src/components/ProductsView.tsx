@@ -93,7 +93,7 @@ export default function ProductsView({ showToast }: Props) {
   };
 
   const handleDeleteProduct = async (p: Product) => {
-    const res = await apiCall('DELETE', undefined, `?id=${p.id}`);
+    const res = await apiCall('DELETE', undefined, `?product_id=${p.id}`);
     if (res?.success) { showToast('✓ Producto eliminado', 'ok'); load(); }
     else showToast(res?.error || 'Error', 'error');
     setDeleteProduct(null);
