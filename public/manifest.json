@@ -1,15 +1,19 @@
 {
   "name": "SaldoBirras — BirraSport",
   "short_name": "SaldoBirras",
-  "description": "Sistema de gestión de saldos para cervecería",
-  "start_url": "/dashboard",
+  "description": "Sistema de gestión de saldos para cervecería BirraSport",
+  "start_url": "/dashboard?source=pwa",
   "id": "/dashboard",
   "display": "standalone",
-  "background_color": "#060A13",
-  "theme_color": "#060A13",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "any",
   "scope": "/",
+  "background_color": "#060A13",
+  "theme_color": "#060A13",
   "categories": ["business", "finance"],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "icons": [
     {
       "src": "/icon-192.png",
@@ -30,6 +34,13 @@
       "purpose": "maskable"
     }
   ],
-  "screenshots": [],
+  "screenshots": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "label": "Panel de gestión de saldos"
+    }
+  ],
   "prefer_related_applications": false
 }

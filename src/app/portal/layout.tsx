@@ -9,6 +9,12 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'BirraSport',
   },
+  icons: {
+    apple: '/icon-192.png',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 };
 
 export const viewport: Viewport = {

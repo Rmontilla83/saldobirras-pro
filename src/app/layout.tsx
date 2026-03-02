@@ -10,6 +10,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'SaldoBirras',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 };
 
 export const viewport: Viewport = {
@@ -28,7 +31,6 @@ export default function RootLayout({
     <html lang="es">
       <head>
         <link rel="apple-touch-icon" href="/icon-192.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body>
         {children}
