@@ -2,6 +2,15 @@ import { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { getAuthUser, unauthorized, badRequest, ok, rateLimit, rateLimited } from '@/lib/api-auth';
 
+// Category grouping for order splitting
+const BAR_CATEGORIES = ['beers', 'beer', 'cocktails', 'cocktail', 'spirits', 'spirit', 'wines', 'wine', 'soft_drinks', 'soft_drink', 'other_drinks'];
+const KITCHEN_CATEGORIES = ['food', 'snacks', 'snack', 'desserts', 'dessert'];
+
+function getOrderType(category: string): 'bar' | 'kitchen' {
+  if (KITCHEN_CATEGORIES.includes(category)) return 'kitchen';
+  return 'bar'; // Default: everything not explicitly kitchen goes to bar
+}
+
 // GET /api/orders — list orders (authenticated)
 export async function GET(req: NextRequest) {
   const user = await getAuthUser(req);
@@ -9,6 +18,7 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get('status');
+  const order_type = searchParams.get('order_type');
 
   const supabase = createAdminClient();
   let query = supabase
@@ -19,6 +29,7 @@ export async function GET(req: NextRequest) {
     .limit(100);
 
   if (status) query = query.eq('status', status);
+  if (order_type) query = query.eq('order_type', order_type);
 
   const { data, error } = await query;
   if (error) return badRequest(error.message);
@@ -79,7 +90,13 @@ export async function POST(req: NextRequest) {
     return badRequest(`Saldo disponible insuficiente. Disponible: ${cust.balance_type === 'money' ? '$' : ''}${available.toFixed(2)}`);
   }
 
-  // Hold balance
+  // Split items by bar/kitchen
+  const barItems = items.filter((i: any) => getOrderType(i.category || 'beer') === 'bar');
+  const kitchenItems = items.filter((i: any) => getOrderType(i.category || 'beer') === 'kitchen');
+
+  const needsSplit = barItems.length > 0 && kitchenItems.length > 0;
+
+  // Hold total balance upfront
   const { data: holdResult, error: holdErr } = await supabase.rpc('hold_balance', {
     p_customer_id: cust.id,
     p_amount: total,
@@ -88,7 +105,57 @@ export async function POST(req: NextRequest) {
   const hr = holdResult as any;
   if (hr?.error) return badRequest(hr.error);
 
-  // Create order
+  if (needsSplit) {
+    // Create two separate orders
+    const barTotal = barItems.reduce((s: number, i: any) => s + (i.subtotal || i.price * i.qty), 0);
+    const kitchenTotal = kitchenItems.reduce((s: number, i: any) => s + (i.subtotal || i.price * i.qty), 0);
+
+    const { data: barOrder, error: barErr } = await supabase
+      .from('orders')
+      .insert({
+        business_id: cust.business_id,
+        customer_id: cust.id,
+        items: barItems,
+        total: barTotal,
+        status: 'pending',
+        zone_id: zone_id || null,
+        note: note ? `🍺 Pedido de Barra · ${note}` : '🍺 Pedido de Barra',
+        order_type: 'bar',
+      })
+      .select()
+      .single();
+
+    const { data: kitchenOrder, error: kitchenErr } = await supabase
+      .from('orders')
+      .insert({
+        business_id: cust.business_id,
+        customer_id: cust.id,
+        items: kitchenItems,
+        total: kitchenTotal,
+        status: 'pending',
+        zone_id: zone_id || null,
+        note: note ? `🍔 Pedido de Cocina · ${note}` : '🍔 Pedido de Cocina',
+        order_type: 'kitchen',
+      })
+      .select()
+      .single();
+
+    if (barErr || kitchenErr) {
+      // Release hold on failure
+      await supabase.rpc('release_hold', { p_customer_id: cust.id, p_amount: total });
+      // Clean up partial orders
+      if (barOrder) await supabase.from('orders').delete().eq('id', barOrder.id);
+      if (kitchenOrder) await supabase.from('orders').delete().eq('id', kitchenOrder.id);
+      return badRequest((barErr || kitchenErr)!.message);
+    }
+
+    // Return the first order ID for the client (they see it as one order)
+    return ok({ ...barOrder, split: true, bar_order_id: barOrder!.id, kitchen_order_id: kitchenOrder!.id });
+  }
+
+  // Single order (all same type)
+  const orderType = kitchenItems.length > 0 ? 'kitchen' : 'bar';
+
   const { data: order, error } = await supabase
     .from('orders')
     .insert({
@@ -99,6 +166,7 @@ export async function POST(req: NextRequest) {
       status: 'pending',
       zone_id: zone_id || null,
       note: note || null,
+      order_type: orderType,
     })
     .select()
     .single();
@@ -146,9 +214,9 @@ export async function PUT(req: NextRequest) {
     const rpcResult = result as any;
     if (rpcResult?.error) return badRequest(rpcResult.error);
 
-    // Update transaction with items
+    // Update transaction with items and order_id
     if (rpcResult.tx_id) {
-      await supabase.from('transactions').update({ items: order.items }).eq('id', rpcResult.tx_id);
+      await supabase.from('transactions').update({ items: order.items, order_id: order.id }).eq('id', rpcResult.tx_id);
     }
 
     // Release the hold

@@ -1,11 +1,45 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Minus, Send, ArrowLeft, Beer, Wine, Coffee, UtensilsCrossed, CircleDot, CheckCircle, Download, MapPin, MessageSquare, Wallet, Clock, PartyPopper } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Send, ArrowLeft, Beer, Wine, Coffee, UtensilsCrossed, CircleDot, CheckCircle, Download, MapPin, MessageSquare, Wallet, Clock, PartyPopper, ChevronDown, ChevronUp, Receipt, LogOut } from 'lucide-react';
 
 interface Product { id: string; name: string; description: string | null; category: string; price: number; is_available: boolean; }
 interface Zone { id: string; name: string; color: string; }
 interface CustomerInfo { id: string; name: string; balance: number; balance_held: number; available_balance: number; balance_type: string; qr_code: string; photo_url: string | null; }
+interface Transaction {
+  id: string; type: 'recharge' | 'consume'; amount: number; balance_after: number;
+  note: string | null; bank: string | null; reference: string | null;
+  created_at: string; cashier_name: string | null; items: any[] | null;
+  order_id: string | null;
+  order: { id: string; items: any[]; order_type: string; created_at: string; updated_at: string; status: string } | null;
+}
+
+const formatDateVE = (dateStr: string) => {
+  const d = new Date(dateStr);
+  return d.toLocaleString('es-VE', {
+    timeZone: 'America/Caracas',
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: true,
+  });
+};
+
+const getDateLabel = (dateStr: string) => {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const caracasOffset = -4 * 60;
+  const toCaracas = (date: Date) => {
+    const utc = date.getTime() + date.getTimezoneOffset() * 60000;
+    return new Date(utc + caracasOffset * 60000);
+  };
+  const dCaracas = toCaracas(d);
+  const nowCaracas = toCaracas(now);
+  const dDay = new Date(dCaracas.getFullYear(), dCaracas.getMonth(), dCaracas.getDate());
+  const nDay = new Date(nowCaracas.getFullYear(), nowCaracas.getMonth(), nowCaracas.getDate());
+  const diff = (nDay.getTime() - dDay.getTime()) / 86400000;
+  if (diff === 0) return 'Hoy';
+  if (diff === 1) return 'Ayer';
+  return dCaracas.toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'America/Caracas' });
+};
 
 const CAT_ICONS: Record<string, any> = {
   beer: <Beer size={22} />, cocktail: <Wine size={22} />, spirit: <Wine size={22} />,
@@ -36,6 +70,9 @@ export default function PortalPage() {
   const [orderNumber, setOrderNumber] = useState('');
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [showStatement, setShowStatement] = useState(false);
+  const [expandedTx, setExpandedTx] = useState<string | null>(null);
 
   // PWA Install
   useEffect(() => {
@@ -52,11 +89,24 @@ export default function PortalPage() {
     setInstallPrompt(null);
   };
 
-  // Auto-login from URL
+  // Auto-login from URL or localStorage
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const qr = params.get('qr');
-    if (qr) { setQrInput(qr); setLoginMode('qr'); lookupCustomer(qr, 'qr'); }
+    if (qr) {
+      setQrInput(qr); setLoginMode('qr'); lookupCustomer(qr, 'qr');
+    } else {
+      // Try localStorage auto-login
+      const savedQr = localStorage.getItem('birrasport_customer_qr');
+      if (savedQr) {
+        setLoading(true);
+        lookupCustomer(savedQr, 'qr').then(() => {
+          // If lookup failed, loading will be false and error will be set
+        }).catch(() => {
+          localStorage.removeItem('birrasport_customer_qr');
+        });
+      }
+    }
   }, []);
 
   const lookupCustomer = async (value: string, mode: 'qr' | 'pin' = 'qr') => {
@@ -70,12 +120,27 @@ export default function PortalPage() {
         setCustomer(data.data.customer);
         setProducts(data.data.products);
         setZones(data.data.zones || []);
+        setTransactions(data.data.transactions || []);
         setStep('menu');
+        // Persist session
+        localStorage.setItem('birrasport_customer_qr', data.data.customer.qr_code);
       } else {
         setError(data.error || 'No encontrado');
+        // Clear invalid saved session
+        localStorage.removeItem('birrasport_customer_qr');
       }
     } catch { setError('Error de conexión'); }
     setLoading(false);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('birrasport_customer_qr');
+    setStep('scan');
+    setCustomer(null);
+    setCart({});
+    setPinInput('');
+    setQrInput('');
+    setError('');
   };
 
   const addToCart = (id: string) => setCart(p => ({ ...p, [id]: (p[id] || 0) + 1 }));
@@ -97,7 +162,7 @@ export default function PortalPage() {
     setError('');
     try {
       const items = cartItems.map(i => ({
-        product_id: i.product.id, name: i.product.name,
+        product_id: i.product.id, name: i.product.name, category: i.product.category,
         qty: i.qty, price: i.product.price, subtotal: i.product.price * i.qty,
       }));
       const res = await fetch('/api/orders', {
@@ -228,9 +293,10 @@ export default function PortalPage() {
           <div className="bg-gradient-to-b from-[#0D1424] to-[#060A13] px-5 pt-5 pb-4">
             <div className="max-w-lg mx-auto">
               <div className="flex items-center justify-between mb-4">
-                <button onClick={() => { setStep('scan'); setCustomer(null); setCart({}); setPinInput(''); }}
-                  className="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center active:bg-white/10">
-                  <ArrowLeft size={20} className="text-slate-400" />
+                <button onClick={logout}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 active:bg-white/10 transition-all" title="Cerrar sesión">
+                  <LogOut size={16} className="text-slate-400" />
+                  <span className="text-[11px] font-semibold text-slate-400">Salir</span>
                 </button>
                 <div className="text-right">
                   <div className="text-[10px] text-slate-500 uppercase tracking-wider">Disponible</div>
@@ -260,21 +326,143 @@ export default function PortalPage() {
 
           <div className="max-w-lg mx-auto px-4">
             {/* Balance card */}
-            <div className="mt-4 mb-5 rounded-2xl bg-gradient-to-r from-amber/[0.06] to-transparent border border-amber/10 p-4 flex items-center gap-3">
-              <Wallet size={24} className="text-amber flex-shrink-0" />
-              <div className="flex-1">
-                <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Mi Saldo</div>
-                <div className="text-2xl font-extrabold text-amber">
-                  {customer.balance_type === 'money' ? `$${customer.balance.toFixed(2)}` : `${customer.balance} 🍺`}
+            <div className="mt-4 mb-5 rounded-2xl bg-gradient-to-r from-amber/[0.06] to-transparent border border-amber/10 p-4">
+              <div className="flex items-center gap-3">
+                <Wallet size={24} className="text-amber flex-shrink-0" />
+                <div className="flex-1">
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Saldo Total</div>
+                  <div className="text-2xl font-extrabold text-amber">
+                    {customer.balance_type === 'money' ? `$${customer.balance.toFixed(2)}` : `${customer.balance} 🍺`}
+                  </div>
                 </div>
               </div>
+
               {customer.balance_held > 0 && (
-                <div className="text-right">
-                  <div className="text-[10px] text-yellow-500">Retenido: ${customer.balance_held.toFixed(2)}</div>
-                  <div className="text-[10px] text-slate-500">Disponible: ${customer.available_balance.toFixed(2)}</div>
+                <div className="mt-3 rounded-xl bg-amber-500/5 border border-amber-500/15 p-3">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-sm">🔒</span>
+                    <span className="text-sm font-semibold text-amber">${customer.balance_held.toFixed(2)} retenido en pedidos</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed mb-2">
+                    Este monto está reservado para pedidos que aún no te han entregado. Se descontará cuando recibas tu pedido.
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm">💰</span>
+                    <span className="text-sm font-bold text-emerald-400">Disponible: ${customer.available_balance.toFixed(2)}</span>
+                  </div>
                 </div>
               )}
             </div>
+
+            {/* Account Statement toggle */}
+            <button onClick={() => setShowStatement(!showStatement)}
+              className="w-full mb-5 py-3.5 rounded-2xl border-2 border-white/[0.06] bg-white/[0.02] flex items-center justify-center gap-2 active:bg-white/[0.04] transition-all">
+              <Receipt size={18} className="text-slate-400" />
+              <span className="text-sm font-bold text-slate-300">Mis Movimientos</span>
+              {showStatement ? <ChevronUp size={16} className="text-slate-500" /> : <ChevronDown size={16} className="text-slate-500" />}
+            </button>
+
+            {/* Account Statement */}
+            {showStatement && (
+              <div className="mb-5 rounded-2xl bg-[#0D1424] border border-white/5 overflow-hidden">
+                <div className="max-h-[400px] overflow-y-auto">
+                  {transactions.length === 0 ? (
+                    <div className="py-10 text-center">
+                      <Receipt size={32} className="mx-auto mb-3 text-slate-700" />
+                      <p className="text-slate-500 text-sm">Sin movimientos aún</p>
+                    </div>
+                  ) : (
+                    (() => {
+                      let lastDateLabel = '';
+                      return transactions.map(tx => {
+                        const dateLabel = getDateLabel(tx.created_at);
+                        const showDateHeader = dateLabel !== lastDateLabel;
+                        lastDateLabel = dateLabel;
+                        const isExpanded = expandedTx === tx.id;
+                        const isRecharge = tx.type === 'recharge';
+
+                        return (
+                          <div key={tx.id}>
+                            {showDateHeader && (
+                              <div className="px-4 py-2 bg-white/[0.02] border-b border-white/[0.04]">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{dateLabel}</span>
+                              </div>
+                            )}
+                            <div
+                              className="px-4 py-3 border-b border-white/[0.04] active:bg-white/[0.02] cursor-pointer transition-colors"
+                              onClick={() => setExpandedTx(isExpanded ? null : tx.id)}
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-lg flex-shrink-0">
+                                  {isRecharge ? '💰' : '🛒'}
+                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-white/85">
+                                      {isRecharge ? 'Recarga' : 'Cobro'}
+                                    </span>
+                                    <span className={`text-sm font-extrabold tabular-nums ${isRecharge ? 'text-emerald-400' : 'text-red-400'}`}>
+                                      {isRecharge ? '+' : '-'}${tx.amount.toFixed(2)}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between mt-0.5">
+                                    <span className="text-[10px] text-slate-500">{formatDateVE(tx.created_at)}</span>
+                                    <span className="text-[10px] text-slate-600">Saldo: ${tx.balance_after.toFixed(2)}</span>
+                                  </div>
+                                  {tx.note && <div className="text-[10px] text-slate-500 mt-0.5 truncate">{tx.note}</div>}
+                                </div>
+                                <span className="text-slate-600 flex-shrink-0">
+                                  {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                </span>
+                              </div>
+
+                              {/* Expanded details */}
+                              {isExpanded && (
+                                <div className="mt-3 ml-8 rounded-xl bg-white/[0.02] border border-white/[0.04] p-3 animate-[fadeIn_0.2s_ease]">
+                                  {!isRecharge && (tx.items || tx.order?.items) && (
+                                    <>
+                                      <div className="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Detalle del pedido</div>
+                                      {(tx.items || tx.order?.items || []).map((item: any, i: number) => (
+                                        <div key={i} className="flex items-center justify-between py-0.5 text-[11px]">
+                                          <span className="text-slate-300">{item.qty}× {item.name}</span>
+                                          <span className="text-white/50 tabular-nums">${(item.price * item.qty).toFixed(2)}</span>
+                                        </div>
+                                      ))}
+                                      {tx.order?.order_type && (
+                                        <div className="mt-2 text-[10px]">
+                                          <span className={`px-2 py-0.5 rounded-lg font-semibold ${tx.order.order_type === 'kitchen' ? 'bg-orange-500/10 text-orange-400' : 'bg-blue-500/10 text-blue-400'}`}>
+                                            {tx.order.order_type === 'kitchen' ? '🍔 Cocina' : '🍺 Barra'}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {tx.order?.created_at && tx.order?.updated_at && tx.order.status === 'delivered' && (
+                                        <div className="mt-2 text-[10px] text-slate-500">
+                                          <div>Pedido: {formatDateVE(tx.order.created_at)}</div>
+                                          <div>Entregado: {formatDateVE(tx.order.updated_at)}</div>
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                  {isRecharge && (
+                                    <>
+                                      <div className="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Detalle de recarga</div>
+                                      <div className="text-[11px] text-slate-300">Monto: <span className="text-emerald-400 font-bold">${tx.amount.toFixed(2)}</span></div>
+                                      {tx.bank && <div className="text-[11px] text-slate-400 mt-0.5">Método: {tx.bank}</div>}
+                                      {tx.reference && <div className="text-[11px] text-slate-400 mt-0.5">Referencia: {tx.reference}</div>}
+                                      {tx.cashier_name && <div className="text-[11px] text-slate-400 mt-0.5">Cajero: {tx.cashier_name}</div>}
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Zone selector — big friendly buttons */}
             {zones.length > 0 && (
@@ -328,7 +516,7 @@ export default function PortalPage() {
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="text-base font-bold text-white/90 leading-tight">{p.name}</div>
-                        {p.description && <div className="text-xs text-slate-500 mt-0.5 line-clamp-1">{p.description}</div>}
+                        {p.description && <div className="text-xs text-slate-500 mt-0.5">{p.description}</div>}
                         <div className="text-lg font-extrabold text-amber mt-1">${Number(p.price).toFixed(2)}</div>
                       </div>
 
@@ -494,7 +682,7 @@ export default function PortalPage() {
             🍺 Pedir Más
           </button>
 
-          <button onClick={() => { setStep('scan'); setCustomer(null); setCart({}); setPinInput(''); }}
+          <button onClick={logout}
             className="mt-3 py-3 text-slate-400 text-sm font-semibold hover:text-white/60 transition-colors">
             Cerrar sesión
           </button>

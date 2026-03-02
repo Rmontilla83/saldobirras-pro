@@ -14,6 +14,7 @@ interface Order {
   items: { name: string; qty: number; price: number; subtotal: number }[];
   total: number;
   status: 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+  order_type: 'bar' | 'kitchen' | 'mixed' | null;
   zone_name: string | null;
   zone_color: string | null;
   note: string | null;
@@ -63,6 +64,7 @@ export default function OrdersView({ showToast }: Props) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('active');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
   const [flash, setFlash] = useState(false);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const supabase = createClient();
@@ -162,10 +164,13 @@ export default function OrdersView({ showToast }: Props) {
     }
   };
 
-  const filtered = filter === 'active'
+  const statusFiltered = filter === 'active'
     ? orders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'ready')
     : filter === 'all' ? orders
     : orders.filter(o => o.status === filter);
+
+  const filtered = typeFilter === 'all' ? statusFiltered
+    : statusFiltered.filter(o => o.order_type === typeFilter);
 
   const pendingCount = orders.filter(o => o.status === 'pending').length;
   const preparingCount = orders.filter(o => o.status === 'preparing').length;
@@ -200,8 +205,8 @@ export default function OrdersView({ showToast }: Props) {
         </button>
       </div>
 
-      {/* Filter */}
-      <div className="flex gap-1 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+      {/* Status Filter */}
+      <div className="flex gap-1 mb-2 overflow-x-auto pb-1 scrollbar-hide">
         {[
           { key: 'active', label: `Activos (${pendingCount + preparingCount + readyCount})` },
           { key: 'pending', label: `Pendientes (${pendingCount})` },
@@ -213,6 +218,21 @@ export default function OrdersView({ showToast }: Props) {
           <button key={f.key} onClick={() => setFilter(f.key)}
             className={`px-3 py-2 rounded-lg text-[11px] font-semibold border transition-all whitespace-nowrap flex-shrink-0
               ${filter === f.key ? 'bg-amber/10 text-amber border-amber/20' : 'border-transparent text-slate-500'}`}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Type Filter */}
+      <div className="flex gap-1 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+        {[
+          { key: 'all', label: 'Todos' },
+          { key: 'bar', label: '🍺 Barra' },
+          { key: 'kitchen', label: '🍔 Cocina' },
+        ].map(f => (
+          <button key={f.key} onClick={() => setTypeFilter(f.key)}
+            className={`px-3 py-2 rounded-lg text-[11px] font-semibold border transition-all whitespace-nowrap flex-shrink-0
+              ${typeFilter === f.key ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'border-transparent text-slate-500'}`}>
             {f.label}
           </button>
         ))}
@@ -237,6 +257,16 @@ export default function OrdersView({ showToast }: Props) {
                     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${sc.bg} ${sc.color}`}>
                       {sc.icon} {sc.label}
                     </span>
+                    {order.order_type === 'bar' && (
+                      <span className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-blue-500/10 text-blue-400">
+                        🍺 BARRA
+                      </span>
+                    )}
+                    {order.order_type === 'kitchen' && (
+                      <span className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-orange-500/10 text-orange-400">
+                        🍔 COCINA
+                      </span>
+                    )}
                     {order.zone_name && (
                       <span className="px-2 py-1 rounded-lg text-[10px] font-semibold" style={{ background: `${order.zone_color}15`, color: order.zone_color || '#F5A623' }}>
                         {order.zone_name}
