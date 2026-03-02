@@ -25,6 +25,19 @@ const TYPE_CONFIG: Record<ChangeType, { label: string; emoji: string; bg: string
 
 const CHANGELOG: Release[] = [
   {
+    version: 'v10.2',
+    date: '2026-03-02 22:00',
+    title: 'Pantalla Producción mejorada: filtros, colores y acceso rápido',
+    changes: [
+      { type: 'new', text: 'Filtro BARRA / COCINA en pantalla de Producción — cada estación ve solo sus pedidos' },
+      { type: 'new', text: 'Soporte de URL directa: /produccion?tipo=cocina o ?tipo=barra para abrir filtrado' },
+      { type: 'new', text: 'Botón "Producción" / "TV" en el dashboard (owner) — abre la pantalla en nueva pestaña' },
+      { type: 'improve', text: 'Tarjetas con colores por tipo: azul para barra, naranja para cocina — identificación visual instantánea' },
+      { type: 'improve', text: 'Logo de BirraSport en el header de Producción en vez de emoji' },
+      { type: 'improve', text: 'Contadores y alarma respetan el filtro activo — solo suenan para el tipo seleccionado' },
+    ]
+  },
+  {
     version: 'v10.1',
     date: '2026-03-02 18:00',
     title: 'Mejoras del portal y menú de comida',

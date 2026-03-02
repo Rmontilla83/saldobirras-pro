@@ -5,7 +5,7 @@ import { useStore } from '@/lib/store';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { LayoutDashboard, UserPlus, ArrowLeftRight, BarChart3, RefreshCw, ScanLine, Users, Smartphone, Monitor, ShieldCheck, LogOut, Package, ClipboardList, Sparkles, Tv } from 'lucide-react';
 
-const LATEST_VERSION = 'v9.0';
+const LATEST_VERSION = 'v10.2';
 
 interface HeaderProps { onRefresh: () => void; onLogout: () => void; }
 
