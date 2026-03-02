@@ -25,6 +25,21 @@ const TYPE_CONFIG: Record<ChangeType, { label: string; emoji: string; bg: string
 
 const CHANGELOG: Release[] = [
   {
+    version: 'v10.0',
+    date: '2026-03-02 14:00',
+    title: '5 mejoras: sesión persistente, pedidos divididos, estado de cuenta',
+    changes: [
+      { type: 'new', text: 'Sesión persistente en el portal — el cliente no tiene que loguearse cada vez que abre la app' },
+      { type: 'new', text: 'Pedidos divididos automáticamente: comida va a Cocina, bebidas van a Barra — cada uno independiente' },
+      { type: 'new', text: 'Estado de cuenta del cliente — historial de movimientos con detalle expandible por transacción' },
+      { type: 'new', text: 'Filtros de tipo de pedido en vista de Pedidos: Todos, Barra, Cocina con badges visuales' },
+      { type: 'improve', text: 'Saldo retenido más visible — card explicativa con candado, monto retenido y saldo disponible' },
+      { type: 'improve', text: 'Tarjetas de productos con altura adaptable — descripciones largas se muestran completas' },
+      { type: 'improve', text: 'Botón "Cerrar sesión" visible en el portal del cliente' },
+      { type: 'improve', text: 'Fechas del estado de cuenta en hora de Venezuela (UTC-4) con separadores por día' },
+    ]
+  },
+  {
     version: 'v9.3',
     date: '2026-02-27 15:30',
     title: 'Sesión única por dispositivo',
