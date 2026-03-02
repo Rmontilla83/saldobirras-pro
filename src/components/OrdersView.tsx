@@ -31,32 +31,48 @@ const STATUS_CONFIG: Record<string, any> = {
   cancelled: { label: 'Cancelado', icon: <XCircle size={12} />, color: 'text-red-400', bg: 'bg-red-400/10', border: 'border-red-400/20' },
 };
 
-// Generate notification beep sound
+// Generate LOUD alarm notification sound
 function playNotificationSound() {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    // Play 3 urgent beeps
-    [0, 0.25, 0.5].forEach(delay => {
+    const now = ctx.currentTime;
+
+    // Round 1: 5 rapid high-pitched beeps (alarm pattern)
+    [0, 0.18, 0.36, 0.54, 0.72].forEach(delay => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.frequency.value = 880;
+      osc.frequency.value = 1200;
       osc.type = 'square';
-      gain.gain.value = 0.3;
-      osc.start(ctx.currentTime + delay);
-      osc.stop(ctx.currentTime + delay + 0.15);
+      gain.gain.value = 1.0; // MAX volume
+      osc.start(now + delay);
+      osc.stop(now + delay + 0.12);
     });
-    // Lower longer tone after beeps
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.frequency.value = 660;
-    osc2.type = 'square';
-    gain2.gain.value = 0.25;
-    osc2.start(ctx.currentTime + 0.85);
-    osc2.stop(ctx.currentTime + 1.3);
+
+    // Round 2: alternating siren tones
+    [1.0, 1.25, 1.5, 1.75].forEach((delay, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = i % 2 === 0 ? 1000 : 700;
+      osc.type = 'sawtooth';
+      gain.gain.value = 0.9;
+      osc.start(now + delay);
+      osc.stop(now + delay + 0.2);
+    });
+
+    // Round 3: long final alert tone
+    const oscFinal = ctx.createOscillator();
+    const gainFinal = ctx.createGain();
+    oscFinal.connect(gainFinal);
+    gainFinal.connect(ctx.destination);
+    oscFinal.frequency.value = 880;
+    oscFinal.type = 'square';
+    gainFinal.gain.value = 1.0;
+    oscFinal.start(now + 2.1);
+    oscFinal.stop(now + 2.8);
   } catch (e) { /* Audio not supported */ }
 }
 
