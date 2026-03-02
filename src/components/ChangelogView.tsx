@@ -25,6 +25,19 @@ const TYPE_CONFIG: Record<ChangeType, { label: string; emoji: string; bg: string
 
 const CHANGELOG: Release[] = [
   {
+    version: 'v10.1',
+    date: '2026-03-02 18:00',
+    title: 'Mejoras del portal y menú de comida',
+    changes: [
+      { type: 'new', text: 'Menú de comida completo: Burger Special, Marinos Rolls, Wings, Perros, Tequeños, Kids Menú y más' },
+      { type: 'improve', text: 'Saldo disponible ahora es el número principal en verde — el cliente sabe exactamente cuánto puede gastar' },
+      { type: 'improve', text: 'Eliminado selector de zona del portal — la zona se asigna al registrar al cliente' },
+      { type: 'improve', text: 'Notificación de pedidos nuevos mucho más fuerte — alarma imposible de ignorar' },
+      { type: 'improve', text: 'Botón "Volver al inicio" en vez de "Pedir Más" después de enviar pedido' },
+      { type: 'fix', text: 'Corregido botón de eliminar productos que no funcionaba' },
+    ]
+  },
+  {
     version: 'v10.0',
     date: '2026-03-02 14:00',
     title: '5 mejoras: sesión persistente, pedidos divididos, estado de cuenta',
