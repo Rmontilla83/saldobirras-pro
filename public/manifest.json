@@ -39,6 +39,7 @@
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
+      "form_factor": "narrow",
       "label": "Panel de gestión de saldos"
     }
   ],

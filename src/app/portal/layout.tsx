@@ -10,6 +10,10 @@ export const metadata: Metadata = {
     title: 'BirraSport',
   },
   icons: {
+    icon: [
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
     apple: '/icon-192.png',
   },
   other: {
@@ -21,8 +25,8 @@ export const viewport: Viewport = {
   themeColor: '#D49B28',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  viewportFit: 'cover',
 };
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {

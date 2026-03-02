@@ -7,7 +7,7 @@
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
-  "scope": "/portal",
+  "scope": "/",
   "background_color": "#060A13",
   "theme_color": "#D49B28",
   "categories": ["food", "lifestyle"],
@@ -39,6 +39,7 @@
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
+      "form_factor": "narrow",
       "label": "Pantalla principal de pedidos"
     }
   ]
