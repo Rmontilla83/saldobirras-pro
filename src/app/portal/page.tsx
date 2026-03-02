@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Minus, Send, ArrowLeft, Beer, Wine, Coffee, UtensilsCrossed, CircleDot, CheckCircle, Download, MapPin, MessageSquare, Wallet, Clock, PartyPopper, ChevronDown, ChevronUp, Receipt, LogOut } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Send, ArrowLeft, Beer, Wine, Coffee, UtensilsCrossed, CircleDot, CheckCircle, Download, MessageSquare, Wallet, Clock, PartyPopper, ChevronDown, ChevronUp, Receipt, LogOut } from 'lucide-react';
 
 interface Product { id: string; name: string; description: string | null; category: string; price: number; is_available: boolean; }
-interface Zone { id: string; name: string; color: string; }
 interface CustomerInfo { id: string; name: string; balance: number; balance_held: number; available_balance: number; balance_type: string; qr_code: string; photo_url: string | null; }
 interface Transaction {
   id: string; type: 'recharge' | 'consume'; amount: number; balance_after: number;
@@ -60,9 +59,7 @@ export default function PortalPage() {
   const [loginMode, setLoginMode] = useState<'pin' | 'qr'>('pin');
   const [customer, setCustomer] = useState<CustomerInfo | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [zones, setZones] = useState<Zone[]>([]);
   const [cart, setCart] = useState<Record<string, number>>({});
-  const [selectedZone, setSelectedZone] = useState('');
   const [note, setNote] = useState('');
   const [filterCat, setFilterCat] = useState('all');
   const [loading, setLoading] = useState(false);
@@ -119,7 +116,6 @@ export default function PortalPage() {
       if (data.success) {
         setCustomer(data.data.customer);
         setProducts(data.data.products);
-        setZones(data.data.zones || []);
         setTransactions(data.data.transactions || []);
         setStep('menu');
         // Persist session
@@ -168,7 +164,7 @@ export default function PortalPage() {
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qr_code: customer.qr_code, items, note, zone_id: selectedZone || undefined }),
+        body: JSON.stringify({ qr_code: customer.qr_code, items, note }),
       });
       const data = await res.json();
       if (data.success) {
@@ -300,7 +296,7 @@ export default function PortalPage() {
                 </button>
                 <div className="text-right">
                   <div className="text-[10px] text-slate-500 uppercase tracking-wider">Disponible</div>
-                  <div className="text-xl font-extrabold text-amber">
+                  <div className="text-xl font-extrabold text-emerald-400">
                     {customer.balance_type === 'money' ? `$${customer.available_balance.toFixed(2)}` : `${customer.available_balance} 🍺`}
                   </div>
                 </div>
@@ -326,12 +322,18 @@ export default function PortalPage() {
 
           <div className="max-w-lg mx-auto px-4">
             {/* Balance card */}
-            <div className="mt-4 mb-5 rounded-2xl bg-gradient-to-r from-amber/[0.06] to-transparent border border-amber/10 p-4">
+            <div className="mt-4 mb-5 rounded-2xl bg-gradient-to-r from-emerald-500/[0.06] to-transparent border border-emerald-500/10 p-4">
               <div className="flex items-center gap-3">
-                <Wallet size={24} className="text-amber flex-shrink-0" />
+                <Wallet size={24} className="text-emerald-400 flex-shrink-0" />
                 <div className="flex-1">
-                  <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Saldo Total</div>
-                  <div className="text-2xl font-extrabold text-amber">
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Saldo Disponible</div>
+                  <div className="text-2xl font-extrabold text-emerald-400">
+                    {customer.balance_type === 'money' ? `$${customer.available_balance.toFixed(2)}` : `${customer.available_balance} 🍺`}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] text-slate-600">Total</div>
+                  <div className="text-sm font-semibold text-slate-400">
                     {customer.balance_type === 'money' ? `$${customer.balance.toFixed(2)}` : `${customer.balance} 🍺`}
                   </div>
                 </div>
@@ -339,17 +341,13 @@ export default function PortalPage() {
 
               {customer.balance_held > 0 && (
                 <div className="mt-3 rounded-xl bg-amber-500/5 border border-amber-500/15 p-3">
-                  <div className="flex items-center gap-2 mb-1.5">
+                  <div className="flex items-center gap-2">
                     <span className="text-sm">🔒</span>
-                    <span className="text-sm font-semibold text-amber">${customer.balance_held.toFixed(2)} retenido en pedidos</span>
+                    <span className="text-xs font-semibold text-amber">${customer.balance_held.toFixed(2)} retenido en pedidos pendientes</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed mb-2">
-                    Este monto está reservado para pedidos que aún no te han entregado. Se descontará cuando recibas tu pedido.
+                  <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                    Se descontará cuando te entreguen tu pedido.
                   </p>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm">💰</span>
-                    <span className="text-sm font-bold text-emerald-400">Disponible: ${customer.available_balance.toFixed(2)}</span>
-                  </div>
                 </div>
               )}
             </div>
@@ -460,27 +458,6 @@ export default function PortalPage() {
                       });
                     })()
                   )}
-                </div>
-              </div>
-            )}
-
-            {/* Zone selector — big friendly buttons */}
-            {zones.length > 0 && (
-              <div className="mt-4 mb-5">
-                <div className="flex items-center gap-2 mb-2.5">
-                  <MapPin size={16} className="text-amber" />
-                  <span className="text-sm font-bold text-white/80">¿Dónde estás?</span>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  {zones.map(z => (
-                    <button key={z.id} onClick={() => setSelectedZone(z.id)}
-                      className={`px-5 py-3 rounded-2xl text-sm font-bold border-2 transition-all active:scale-95
-                        ${selectedZone === z.id
-                          ? 'border-amber/40 bg-amber/10 text-amber shadow-lg shadow-amber/10'
-                          : 'border-white/5 bg-white/[0.02] text-slate-400'}`}>
-                      {z.name}
-                    </button>
-                  ))}
                 </div>
               </div>
             )}
