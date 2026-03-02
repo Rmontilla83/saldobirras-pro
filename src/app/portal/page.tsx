@@ -656,7 +656,7 @@ export default function PortalPage() {
 
           <button onClick={() => { setStep('menu'); setNote(''); setError(''); }}
             className="w-full max-w-xs py-5 bg-amber/10 text-amber font-extrabold rounded-2xl text-lg active:bg-amber/20 transition-all">
-            🍺 Pedir Más
+            Volver al inicio
           </button>
 
           <button onClick={logout}
