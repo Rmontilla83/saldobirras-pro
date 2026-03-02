@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -110,8 +110,23 @@ const MAX_ITEMS = 6;
 // ══════════════════════════════════════════════════════════════════
 // Main Component
 // ══════════════════════════════════════════════════════════════════
+type TypeFilter = 'all' | 'bar' | 'kitchen';
+
 export default function ProduccionPage() {
+  return (
+    <Suspense fallback={
+      <div className="fixed inset-0 bg-[#080D19] flex items-center justify-center">
+        <div className="w-8 h-8 border-3 border-amber-400/20 border-t-amber-400 rounded-full animate-spin" />
+      </div>
+    }>
+      <ProduccionContent />
+    </Suspense>
+  );
+}
+
+function ProduccionContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const clock = useVenezuelaClock();
 
@@ -119,9 +134,17 @@ export default function ProduccionPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [pendingFlash, setPendingFlash] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
 
   const prevPendingIds = useRef<string[]>([]);
   const sessionRef = useRef<string | null>(null);
+
+  // Read URL param ?tipo=cocina|barra on mount
+  useEffect(() => {
+    const tipo = searchParams.get('tipo');
+    if (tipo === 'cocina') setTypeFilter('kitchen');
+    else if (tipo === 'barra') setTypeFilter('bar');
+  }, [searchParams]);
 
   // ── Auth check ──────────────────────────────────────────────────
   useEffect(() => {
@@ -146,8 +169,11 @@ export default function ProduccionPage() {
       const incoming: Order[] = json.data;
       setOrders(incoming);
 
-      // Detect new pending orders
-      const pendingIds = incoming.filter(o => o.status === 'pending').map(o => o.id);
+      // Detect new pending orders (only for the filtered type)
+      const filteredIncoming = typeFilter === 'all'
+        ? incoming
+        : incoming.filter(o => o.order_type === typeFilter || o.order_type === 'mixed');
+      const pendingIds = filteredIncoming.filter(o => o.status === 'pending').map(o => o.id);
       const prev = prevPendingIds.current;
       const brandNew = pendingIds.filter(id => !prev.includes(id));
 
@@ -159,7 +185,7 @@ export default function ProduccionPage() {
 
       prevPendingIds.current = pendingIds;
     } catch {}
-  }, [audioUnlocked]);
+  }, [audioUnlocked, typeFilter]);
 
   useEffect(() => {
     if (!authed) return;
@@ -179,9 +205,12 @@ export default function ProduccionPage() {
   }, [authed]);
 
   // ── Derived data ────────────────────────────────────────────────
-  const pending = orders.filter(o => o.status === 'pending');
-  const preparing = orders.filter(o => o.status === 'preparing');
-  const ready = orders.filter(o => o.status === 'ready');
+  const filtered = typeFilter === 'all'
+    ? orders
+    : orders.filter(o => o.order_type === typeFilter || o.order_type === 'mixed');
+  const pending = filtered.filter(o => o.status === 'pending');
+  const preparing = filtered.filter(o => o.status === 'preparing');
+  const ready = filtered.filter(o => o.status === 'ready');
 
   // Sort each column: oldest first (longest wait on top)
   pending.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -221,12 +250,37 @@ export default function ProduccionPage() {
       {/* ═══ HEADER ═══ */}
       <header className="flex-shrink-0 flex items-center justify-between px-6 py-3 bg-[#0C1324] border-b border-white/[0.06]">
         <div className="flex items-center gap-3">
-          <span className="text-3xl">🍺</span>
+          <img src="/logo.png" alt="BirraSport" className="w-12 h-12 object-contain" />
           <span className="text-2xl font-black text-white tracking-tight">PRODUCCIÓN</span>
           <span className="text-lg font-semibold text-amber-400 ml-1">BirraSport</span>
         </div>
 
         <div className="flex items-center gap-6">
+          {/* Type filter */}
+          <div className="flex items-center gap-1">
+            {([
+              { key: 'all' as TypeFilter, label: 'TODOS', emoji: '' },
+              { key: 'bar' as TypeFilter, label: 'BARRA', emoji: '🍺 ' },
+              { key: 'kitchen' as TypeFilter, label: 'COCINA', emoji: '🍔 ' },
+            ]).map(f => (
+              <button
+                key={f.key}
+                onClick={() => setTypeFilter(f.key)}
+                className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${
+                  typeFilter === f.key
+                    ? f.key === 'bar'
+                      ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/40'
+                      : f.key === 'kitchen'
+                      ? 'bg-orange-500/20 text-orange-400 ring-1 ring-orange-500/40'
+                      : 'bg-white/10 text-white ring-1 ring-white/20'
+                    : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                }`}
+              >
+                {f.emoji}{f.label}
+              </button>
+            ))}
+          </div>
+
           {/* Counters */}
           <div className="flex items-center gap-4 text-lg font-bold">
             <span className="text-yellow-400">{pending.length} pend</span>
@@ -258,6 +312,7 @@ export default function ProduccionPage() {
           flash={pendingFlash}
           emptyIcon="☕"
           emptyText="Sin pedidos pendientes"
+          typeFilter={typeFilter !== 'all' ? typeFilter : undefined}
         />
 
         {/* ── PREPARANDO ── */}
@@ -273,6 +328,7 @@ export default function ProduccionPage() {
           flash={false}
           emptyIcon="🍳"
           emptyText="Nada en preparación"
+          typeFilter={typeFilter !== 'all' ? typeFilter : undefined}
         />
 
         {/* ── LISTO ── */}
@@ -289,6 +345,7 @@ export default function ProduccionPage() {
           glow
           emptyIcon="🎉"
           emptyText="Todo entregado"
+          typeFilter={typeFilter !== 'all' ? typeFilter : undefined}
         />
       </div>
     </div>
@@ -300,7 +357,7 @@ export default function ProduccionPage() {
 // ══════════════════════════════════════════════════════════════════
 function KanbanColumn({
   title, emoji, count, orders, headerBg, headerText, borderColor,
-  cardBorder, flash, glow, emptyIcon, emptyText,
+  cardBorder, flash, glow, emptyIcon, emptyText, typeFilter,
 }: {
   title: string;
   emoji: string;
@@ -314,12 +371,19 @@ function KanbanColumn({
   glow?: boolean;
   emptyIcon: string;
   emptyText: string;
+  typeFilter?: TypeFilter;
 }) {
+  const columnBorderColor = typeFilter === 'bar'
+    ? 'border-blue-400/20'
+    : typeFilter === 'kitchen'
+    ? 'border-orange-400/20'
+    : borderColor;
+
   return (
     <div className={`flex flex-col border-r border-white/[0.04] last:border-r-0 min-h-0 ${glow ? 'glow-column' : ''}`}>
       {/* Column Header */}
       <div
-        className={`flex-shrink-0 flex items-center justify-center gap-3 py-3 ${headerBg} border-b ${borderColor} transition-all
+        className={`flex-shrink-0 flex items-center justify-center gap-3 py-3 ${headerBg} border-b ${columnBorderColor} transition-all
           ${flash ? 'animate-header-flash' : ''}`}
       >
         <span className="text-2xl">{emoji}</span>
@@ -370,9 +434,16 @@ function OrderCard({
     ? { label: '🍔 COCINA', bg: 'bg-orange-500/15', text: 'text-orange-400' }
     : null;
 
+  // Type-based card styling
+  const typeBg = order.order_type === 'bar'
+    ? 'bg-[#0F1A35]/80 border-l-blue-400'
+    : order.order_type === 'kitchen'
+    ? 'bg-[#1A1710]/80 border-l-orange-400'
+    : `bg-[#111A30]/80 ${borderClass}`;
+
   return (
     <div
-      className={`rounded-2xl bg-[#111A30]/80 border-l-4 ${borderClass} p-4 flex-shrink-0
+      className={`rounded-2xl border-l-4 ${typeBg} p-4 flex-shrink-0
         animate-card-in ${glow ? 'ring-1 ring-emerald-400/30 shadow-[0_0_20px_rgba(0,214,143,0.15)]' : ''}
       `}
       style={{ animationDelay: `${animDelay}ms` }}
