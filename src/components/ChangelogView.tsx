@@ -25,6 +25,28 @@ const TYPE_CONFIG: Record<ChangeType, { label: string; emoji: string; bg: string
 
 const CHANGELOG: Release[] = [
   {
+    version: 'v10.3',
+    date: '2026-03-03 16:00',
+    title: 'Auditoría de seguridad pre-producción',
+    changes: [
+      { type: 'security', text: 'Protección contra montos negativos — imposible robar saldo con recargas o consumos negativos' },
+      { type: 'security', text: 'Verificación multi-tenancy en pedidos — un negocio no puede modificar órdenes de otro' },
+      { type: 'security', text: 'Permisos faltantes corregidos en exportar, registrar, editar cliente, enviar email y productos' },
+      { type: 'security', text: 'Solo el owner puede activar saldo negativo (allow_negative) — cajeros restringidos' },
+      { type: 'security', text: 'Rate limit por PIN en el portal — bloqueo tras 5 intentos fallidos por 5 minutos' },
+      { type: 'security', text: 'Datos sensibles eliminados del portal — ya no expone banco, referencia ni cajero' },
+      { type: 'security', text: 'Auto-login por URL removido — previene ataques de phishing con links maliciosos' },
+      { type: 'security', text: 'Detección de IP mejorada — rate limit no bypasseable con headers falsos' },
+      { type: 'security', text: 'Búsqueda sanitizada — caracteres especiales ya no pueden inyectar patrones SQL' },
+      { type: 'security', text: 'Headers de seguridad reforzados: X-Frame-Options DENY, X-XSS-Protection' },
+      { type: 'improve', text: 'PIN de clientes nuevos ahora es de 6 dígitos — 1 millón de combinaciones vs 10 mil' },
+      { type: 'improve', text: 'Índices de base de datos optimizados para 1000+ clientes diarios' },
+      { type: 'improve', text: 'Constraints en base de datos: saldo retenido no negativo, totales positivos, PIN único por negocio' },
+      { type: 'improve', text: 'Holds y releases ahora se registran en auditoría' },
+      { type: 'new', text: 'Función de limpieza automática de holds huérfanos (pedidos abandonados > 2 horas)' },
+    ]
+  },
+  {
     version: 'v10.2',
     date: '2026-03-02 22:00',
     title: 'Pantalla Producción mejorada: filtros, colores y acceso rápido',
