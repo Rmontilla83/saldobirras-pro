@@ -40,17 +40,18 @@ export default function RootLayout({
         {children}
         <script dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {
+            var refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', function() {
+              if (refreshing) return;
+              refreshing = true;
+              console.log('[SW] Nueva versión activada, recargando...');
+              window.location.reload();
+            });
             window.addEventListener('load', function() {
               navigator.serviceWorker.register('/sw.js')
                 .then(function(reg) {
-                  reg.addEventListener('updatefound', function() {
-                    var w = reg.installing;
-                    if (w) w.addEventListener('statechange', function() {
-                      if (w.state === 'activated' && navigator.serviceWorker.controller) {
-                        console.log('[SW] Nueva versión disponible');
-                      }
-                    });
-                  });
+                  // Check for updates every 60 seconds
+                  setInterval(function() { reg.update(); }, 60000);
                 })
                 .catch(function(err) { console.warn('[SW] Error registro:', err); });
             });

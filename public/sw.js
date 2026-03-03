@@ -1,4 +1,4 @@
-const CACHE_NAME = 'saldobirras-v4';
+const CACHE_NAME = 'saldobirras-v5';
 const OFFLINE_URL = '/offline.html';
 
 // Assets that are safe to precache (static files only, never pages that may redirect)
