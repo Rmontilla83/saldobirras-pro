@@ -246,9 +246,14 @@ function ProduccionContent() {
   }
 
   return (
-    <div className="fixed inset-0 bg-[#080D19] flex flex-col overflow-hidden select-none">
+    <div className="fixed inset-0 flex flex-col overflow-hidden select-none">
+      {/* ═══ BACKGROUND ═══ */}
+      <div className="fixed inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: "url('/fondo.jpg')" }}>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#080D19]/[0.92] via-[#080D19]/80 to-[#080D19]/95" />
+      </div>
+
       {/* ═══ HEADER ═══ */}
-      <header className="flex-shrink-0 flex items-center justify-between px-6 py-3 bg-[#0C1324] border-b border-white/[0.06]">
+      <header className="relative z-10 flex-shrink-0 flex items-center justify-between px-6 py-3 bg-[#0C1324]/80 backdrop-blur-sm border-b border-white/[0.06]">
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="BirraSport" className="w-12 h-12 object-contain" />
           <span className="text-2xl font-black text-white tracking-tight">PRODUCCIÓN</span>
@@ -298,7 +303,7 @@ function ProduccionContent() {
       </header>
 
       {/* ═══ KANBAN COLUMNS ═══ */}
-      <div className="flex-1 grid grid-cols-3 gap-0 min-h-0">
+      <div className="relative z-10 flex-1 grid grid-cols-3 gap-0 min-h-0">
         {/* ── PENDIENTE ── */}
         <KanbanColumn
           title="PENDIENTE"
