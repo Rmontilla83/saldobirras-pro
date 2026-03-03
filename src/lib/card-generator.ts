@@ -47,11 +47,11 @@ export async function generateCard({ customer, photoBase64, logoBase64, marinosG
   const ctx = canvas.getContext('2d')!;
 
   // ═══ BACKGROUND ═══
-  ctx.fillStyle = '#080C1C';
+  ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, W, H);
 
   // Diagonal lines
-  ctx.strokeStyle = '#0E162A';
+  ctx.strokeStyle = '#E8ECF2';
   ctx.lineWidth = 1;
   for (let i = -H; i < W + H; i += mm(2.5)) {
     ctx.beginPath();
@@ -60,15 +60,15 @@ export async function generateCard({ customer, photoBase64, logoBase64, marinosG
     ctx.stroke();
   }
 
-  // Darken overlay
-  ctx.fillStyle = 'rgba(8, 12, 28, 0.7)';
+  // Subtle overlay
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
   ctx.fillRect(0, 0, W, H);
 
   // ═══ MARINOS GOLD WATERMARK ═══
   if (marinosGoldBase64) {
     try {
       const mgImg = await loadImg(marinosGoldBase64);
-      ctx.globalAlpha = 0.055;
+      ctx.globalAlpha = 0.07;
       const mgS = mm(56);
       ctx.drawImage(mgImg, W / 2 - mgS / 2, H / 2 - mgS / 2, mgS, mgS);
       ctx.globalAlpha = 1;
@@ -87,7 +87,7 @@ export async function generateCard({ customer, photoBase64, logoBase64, marinosG
   ctx.fillRect(W * 0.25, H - mm(0.5), W * 0.5, mm(0.5));
 
   // ═══ HEADER BAR ═══
-  ctx.fillStyle = '#0A1020';
+  ctx.fillStyle = '#0C1324';
   ctx.fillRect(0, mm(0.5), W, mm(12.5));
 
   // Gold line
@@ -132,9 +132,9 @@ export async function generateCard({ customer, photoBase64, logoBase64, marinosG
   ctx.fillStyle = '#C89B28';
   ctx.fill();
 
-  // Inner dark
+  // Inner fill
   roundRect(ctx, px, py, pw, ph, mm(1));
-  ctx.fillStyle = '#0C1426';
+  ctx.fillStyle = '#F0F2F7';
   ctx.fill();
 
   if (photoBase64) {
@@ -166,7 +166,7 @@ export async function generateCard({ customer, photoBase64, logoBase64, marinosG
   ctx.font = `bold ${mm(1.5)}px 'Segoe UI', Arial, sans-serif`;
   ctx.fillText('━━  M I E M B R O  V I P  ━━', ix, mm(18.5));
 
-  ctx.fillStyle = '#F5F5FF';
+  ctx.fillStyle = '#0C1324';
   ctx.font = `bold ${mm(3)}px 'Segoe UI', Arial, sans-serif`;
   const dispName = customer.name.length > 20 ? customer.name.substring(0, 20) + '…' : customer.name;
   ctx.fillText(dispName.toUpperCase(), ix, mm(24));
@@ -179,7 +179,7 @@ export async function generateCard({ customer, photoBase64, logoBase64, marinosG
   ctx.lineTo(ix + mm(26), mm(25.5));
   ctx.stroke();
 
-  ctx.fillStyle = '#788CAF';
+  ctx.fillStyle = '#4A5568';
   ctx.font = `${mm(1.8)}px 'Segoe UI', Arial, sans-serif`;
   let cy = mm(29.5);
   if (customer.email) {
@@ -194,13 +194,13 @@ export async function generateCard({ customer, photoBase64, logoBase64, marinosG
   // PIN
   if ((customer as any).pin) {
     roundRect(ctx, ix, cy, mm(14), mm(5), mm(1.2));
-    ctx.fillStyle = '#121C30';
+    ctx.fillStyle = '#F0F2F7';
     ctx.fill();
     ctx.strokeStyle = '#C89B28';
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    ctx.fillStyle = '#788CAF';
+    ctx.fillStyle = '#4A5568';
     ctx.font = `bold ${mm(1.2)}px 'Segoe UI', Arial, sans-serif`;
     ctx.fillText('PIN', ix + mm(1.5), cy + mm(1.8));
     ctx.fillStyle = '#C89B28';
@@ -211,7 +211,7 @@ export async function generateCard({ customer, photoBase64, logoBase64, marinosG
 
   // Balance pill
   roundRect(ctx, ix, cy, mm(26), mm(4.2), mm(1));
-  ctx.fillStyle = '#121C30';
+  ctx.fillStyle = '#F0F2F7';
   ctx.fill();
   ctx.strokeStyle = '#C89B28';
   ctx.lineWidth = 1;
@@ -256,7 +256,7 @@ export async function generateCard({ customer, photoBase64, logoBase64, marinosG
   ctx.textAlign = 'left';
 
   // ═══ CARD ID ═══
-  ctx.fillStyle = '#2D3C55';
+  ctx.fillStyle = '#8896AB';
   ctx.font = `${mm(1)}px 'Segoe UI', Arial, sans-serif`;
   ctx.textAlign = 'right';
   ctx.fillText('CARD ID', W - mm(4), H - mm(4.2));
