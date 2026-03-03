@@ -8,6 +8,10 @@ export async function POST(req: NextRequest) {
   const user = await getAuthUser(req);
   if (!user) return unauthorized();
 
+  if (user.role !== 'owner' && !(user as any).permissions?.send_email) {
+    return badRequest('No tienes permiso para enviar correos');
+  }
+
   const { customer_id } = await req.json();
   if (!customer_id) return badRequest('customer_id es requerido');
 

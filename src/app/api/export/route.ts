@@ -8,6 +8,10 @@ export async function GET(req: NextRequest) {
   const user = await getAuthUser(req);
   if (!user) return unauthorized();
 
+  if (user.role !== 'owner' && !(user as any).permissions?.export) {
+    return badRequest('No tienes permiso para exportar datos');
+  }
+
   const { searchParams } = new URL(req.url);
   const from = searchParams.get('from');
   const to = searchParams.get('to');

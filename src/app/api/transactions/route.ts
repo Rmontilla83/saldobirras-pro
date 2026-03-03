@@ -43,11 +43,18 @@ export async function POST(req: NextRequest) {
   if (!user) return unauthorized();
 
   const body = await req.json();
-  const { customer_id, type, amount, note, bank, reference, items } = body;
+  const { customer_id, type, note, bank, reference, items } = body;
+  const parsedAmount = Number(body.amount);
 
-  if (!customer_id || !type || !amount || amount <= 0) {
-    return badRequest('customer_id, type y amount son requeridos');
+  if (!customer_id || !type || isNaN(parsedAmount) || parsedAmount <= 0) {
+    return badRequest('customer_id, type y amount (positivo) son requeridos');
   }
+
+  if (parsedAmount > 100000) {
+    return badRequest('El monto excede el límite permitido');
+  }
+
+  const amount = parsedAmount;
 
   // Permission check (owner bypasses)
   if (user.role !== 'owner') {

@@ -7,6 +7,10 @@ export async function PUT(req: NextRequest) {
   const user = await getAuthUser(req);
   if (!user) return unauthorized();
 
+  if (user.role !== 'owner' && !(user as any).permissions?.edit_customer) {
+    return badRequest('No tienes permiso para editar clientes');
+  }
+
   const contentType = req.headers.get('content-type') || '';
   const supabase = createAdminClient();
 
@@ -25,7 +29,12 @@ export async function PUT(req: NextRequest) {
     if (email !== null) updates.email = email || null;
     if (phone !== null) updates.phone = phone || null;
     const allowNeg = formData.get('allow_negative');
-    if (allowNeg !== null) updates.allow_negative = allowNeg === 'true';
+    if (allowNeg !== null) {
+      if (user.role !== 'owner') {
+        return badRequest('Solo el owner puede modificar allow_negative');
+      }
+      updates.allow_negative = allowNeg === 'true';
+    }
 
     // Upload new photo if provided
     if (photoFile && photoFile.size > 0) {

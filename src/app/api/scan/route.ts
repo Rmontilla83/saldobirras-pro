@@ -53,12 +53,14 @@ export async function GET(req: NextRequest) {
   }
 
   if (query) {
+    // Escape special ILIKE characters to prevent pattern injection
+    const safeQuery = query.replace(/[%_\\]/g, (c) => `\\${c}`);
     const { data, error } = await supabase
       .from('customers')
       .select('*')
       .eq('business_id', user.business_id)
       .eq('is_active', true)
-      .or(`name.ilike.%${query}%,email.ilike.%${query}%,phone.ilike.%${query}%`)
+      .or(`name.ilike.%${safeQuery}%,email.ilike.%${safeQuery}%,phone.ilike.%${safeQuery}%`)
       .limit(10);
 
     if (error) return badRequest(error.message);

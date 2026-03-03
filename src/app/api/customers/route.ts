@@ -25,6 +25,10 @@ export async function POST(req: NextRequest) {
   const user = await getAuthUser(req);
   if (!user) return unauthorized();
 
+  if (user.role !== 'owner' && !(user as any).permissions?.register) {
+    return badRequest('No tienes permiso para registrar clientes');
+  }
+
   // Parse FormData (supports file upload)
   const contentType = req.headers.get('content-type') || '';
   let name: string, email: string | undefined, phone: string | undefined;
@@ -55,10 +59,10 @@ export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
   const qr_code = `SB-${nanoid(12)}`;
 
-  // Generate unique 4-digit PIN
+  // Generate unique 6-digit PIN
   let pin = '';
   for (let attempt = 0; attempt < 100; attempt++) {
-    const candidate = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    const candidate = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
     const { data: exists } = await supabase
       .from('customers')
       .select('id')

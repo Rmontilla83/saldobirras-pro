@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const user = await getAuthUser(req);
   if (!user) return unauthorized();
-  if (user.role !== 'owner' && !(user as any).permissions?.manage_users) {
+  if (user.role !== 'owner' && !(user as any).permissions?.manage_products) {
     return badRequest('No tienes permiso para gestionar productos');
   }
 
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const user = await getAuthUser(req);
   if (!user) return unauthorized();
-  if (user.role !== 'owner' && !(user as any).permissions?.manage_users) {
+  if (user.role !== 'owner' && !(user as any).permissions?.manage_products) {
     return badRequest('No tienes permiso para gestionar productos');
   }
 

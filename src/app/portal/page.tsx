@@ -7,8 +7,7 @@ interface Product { id: string; name: string; description: string | null; catego
 interface CustomerInfo { id: string; name: string; balance: number; balance_held: number; available_balance: number; balance_type: string; qr_code: string; photo_url: string | null; }
 interface Transaction {
   id: string; type: 'recharge' | 'consume'; amount: number; balance_after: number;
-  note: string | null; bank: string | null; reference: string | null;
-  created_at: string; cashier_name: string | null; items: any[] | null;
+  note: string | null; created_at: string; items: any[] | null;
   order_id: string | null;
   order: { id: string; items: any[]; order_type: string; created_at: string; updated_at: string; status: string } | null;
 }
@@ -86,23 +85,16 @@ export default function PortalPage() {
     setInstallPrompt(null);
   };
 
-  // Auto-login from URL or localStorage
+  // Auto-login from sessionStorage only (no URL-based auto-login to prevent phishing)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const qr = params.get('qr');
-    if (qr) {
-      setQrInput(qr); setLoginMode('qr'); lookupCustomer(qr, 'qr');
-    } else {
-      // Try localStorage auto-login
-      const savedQr = localStorage.getItem('birrasport_customer_qr');
-      if (savedQr) {
-        setLoading(true);
-        lookupCustomer(savedQr, 'qr').then(() => {
-          // If lookup failed, loading will be false and error will be set
-        }).catch(() => {
-          localStorage.removeItem('birrasport_customer_qr');
-        });
-      }
+    const savedQr = sessionStorage.getItem('birrasport_customer_qr');
+    if (savedQr) {
+      setLoading(true);
+      lookupCustomer(savedQr, 'qr').then(() => {
+        // If lookup failed, loading will be false and error will be set
+      }).catch(() => {
+        sessionStorage.removeItem('birrasport_customer_qr');
+      });
     }
   }, []);
 
@@ -119,18 +111,18 @@ export default function PortalPage() {
         setTransactions(data.data.transactions || []);
         setStep('menu');
         // Persist session
-        localStorage.setItem('birrasport_customer_qr', data.data.customer.qr_code);
+        sessionStorage.setItem('birrasport_customer_qr', data.data.customer.qr_code);
       } else {
         setError(data.error || 'No encontrado');
         // Clear invalid saved session
-        localStorage.removeItem('birrasport_customer_qr');
+        sessionStorage.removeItem('birrasport_customer_qr');
       }
     } catch { setError('Error de conexión'); }
     setLoading(false);
   };
 
   const logout = () => {
-    localStorage.removeItem('birrasport_customer_qr');
+    sessionStorage.removeItem('birrasport_customer_qr');
     setStep('scan');
     setCustomer(null);
     setCart({});
@@ -214,20 +206,20 @@ export default function PortalPage() {
             {loginMode === 'pin' ? (
               <div className="text-center">
                 <p className="text-white/80 text-lg font-semibold mb-2">Ingresa tu PIN</p>
-                <p className="text-slate-500 text-sm mb-6">Los 4 números de tu tarjeta</p>
-                <div className="flex justify-center gap-4 mb-6">
-                  {[0, 1, 2, 3].map(i => (
+                <p className="text-slate-500 text-sm mb-6">Los 6 números de tu tarjeta</p>
+                <div className="flex justify-center gap-2.5 mb-6">
+                  {[0, 1, 2, 3, 4, 5].map(i => (
                     <input key={i} id={`pin-${i}`} type="tel" maxLength={1} inputMode="numeric" pattern="[0-9]" autoComplete="off"
-                      className="w-16 h-20 bg-[#0D1424] rounded-2xl border-2 border-white/10 text-center text-3xl font-extrabold text-amber focus:outline-none focus:border-amber/60 focus:shadow-[0_0_20px_rgba(245,166,35,0.15)] transition-all"
+                      className="w-12 h-16 bg-[#0D1424] rounded-2xl border-2 border-white/10 text-center text-2xl font-extrabold text-amber focus:outline-none focus:border-amber/60 focus:shadow-[0_0_20px_rgba(245,166,35,0.15)] transition-all"
                       value={pinInput[i] || ''}
                       onChange={e => {
                         const v = e.target.value.replace(/\D/g, '');
                         const newPin = pinInput.split('');
                         newPin[i] = v;
-                        const joined = newPin.join('').slice(0, 4);
+                        const joined = newPin.join('').slice(0, 6);
                         setPinInput(joined);
-                        if (v && i < 3) document.getElementById(`pin-${i + 1}`)?.focus();
-                        if (joined.length === 4) lookupCustomer(joined, 'pin');
+                        if (v && i < 5) document.getElementById(`pin-${i + 1}`)?.focus();
+                        if (joined.length === 6) lookupCustomer(joined, 'pin');
                       }}
                       onKeyDown={e => {
                         if (e.key === 'Backspace' && !pinInput[i] && i > 0) {
@@ -257,8 +249,8 @@ export default function PortalPage() {
               </div>
             )}
 
-            <button onClick={() => loginMode === 'pin' ? (pinInput.length === 4 && lookupCustomer(pinInput, 'pin')) : (qrInput && lookupCustomer(qrInput, 'qr'))}
-              disabled={loading || (loginMode === 'pin' ? pinInput.length < 4 : !qrInput)}
+            <button onClick={() => loginMode === 'pin' ? (pinInput.length === 6 && lookupCustomer(pinInput, 'pin')) : (qrInput && lookupCustomer(qrInput, 'qr'))}
+              disabled={loading || (loginMode === 'pin' ? pinInput.length < 6 : !qrInput)}
               className="w-full mt-6 py-5 bg-amber text-black font-extrabold rounded-2xl text-lg disabled:opacity-20 transition-all shadow-lg shadow-amber/20 active:scale-[0.98]">
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -445,9 +437,6 @@ export default function PortalPage() {
                                     <>
                                       <div className="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Detalle de recarga</div>
                                       <div className="text-[11px] text-slate-300">Monto: <span className="text-emerald-400 font-bold">${tx.amount.toFixed(2)}</span></div>
-                                      {tx.bank && <div className="text-[11px] text-slate-400 mt-0.5">Método: {tx.bank}</div>}
-                                      {tx.reference && <div className="text-[11px] text-slate-400 mt-0.5">Referencia: {tx.reference}</div>}
-                                      {tx.cashier_name && <div className="text-[11px] text-slate-400 mt-0.5">Cajero: {tx.cashier_name}</div>}
                                     </>
                                   )}
                                 </div>

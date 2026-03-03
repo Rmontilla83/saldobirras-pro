@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
 
 // Simple in-memory rate limiter
@@ -15,6 +14,11 @@ export function rateLimit(key: string, maxRequests: number = 30, windowMs: numbe
   entry.count++;
   if (entry.count > maxRequests) return false;
   return true;
+}
+
+// Get real client IP (prefer x-real-ip injected by Vercel, not spoofeable)
+export function getClientIp(req: NextRequest): string {
+  return req.headers.get('x-real-ip') || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
 }
 
 export function rateLimited() {

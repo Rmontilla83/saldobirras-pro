@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
 
 // POST /api/orders — create order (public from portal OR authenticated from cashier)
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') || 'unknown';
+  const ip = req.headers.get('x-real-ip') || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
   if (!rateLimit(`orders:${ip}`, 10, 60000)) return rateLimited();
 
   const body = await req.json();
@@ -58,6 +58,19 @@ export async function POST(req: NextRequest) {
 
   if ((!customer_id && !qr_code) || !items || !items.length) {
     return badRequest('customer_id/qr_code e items son requeridos');
+  }
+
+  // Validate each item has positive price, qty, and subtotal
+  for (const item of items) {
+    const price = Number(item.price);
+    const qty = Number(item.qty);
+    if (isNaN(price) || price <= 0 || isNaN(qty) || qty <= 0 || !Number.isInteger(qty)) {
+      return badRequest('Cada item debe tener precio y cantidad positivos');
+    }
+    if (item.subtotal !== undefined) {
+      const sub = Number(item.subtotal);
+      if (isNaN(sub) || sub <= 0) return badRequest('Subtotal de item inválido');
+    }
   }
 
   const supabase = createAdminClient();
@@ -82,7 +95,12 @@ export async function POST(req: NextRequest) {
 
   if (!cust) return badRequest('Cliente no encontrado');
 
-  const total = items.reduce((s: number, i: any) => s + (i.subtotal || i.price * i.qty), 0);
+  const total = items.reduce((s: number, i: any) => s + (Number(i.subtotal) || Number(i.price) * Number(i.qty)), 0);
+
+  if (total <= 0 || total > 100000) {
+    return badRequest('Total del pedido inválido');
+  }
+
   const available = cust.balance - (cust.balance_held || 0);
 
   // Check available balance (unless allow_negative)
@@ -194,6 +212,7 @@ export async function PUT(req: NextRequest) {
     .from('orders')
     .select('*')
     .eq('id', id)
+    .eq('business_id', user.business_id)
     .single();
 
   if (!order) return badRequest('Orden no encontrada');
@@ -233,6 +252,7 @@ export async function PUT(req: NextRequest) {
     .from('orders')
     .update({ status, updated_at: new Date().toISOString(), delivered_by: status === 'delivered' ? user.id : null })
     .eq('id', id)
+    .eq('business_id', user.business_id)
     .select()
     .single();
 
