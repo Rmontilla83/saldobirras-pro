@@ -40,6 +40,7 @@ export interface Product {
 export interface OrderItem {
   product_id: string;
   name: string;
+  category?: string;
   qty: number;
   price: number;
   subtotal: number;

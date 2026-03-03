@@ -119,7 +119,7 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
     .map(([pid, qty]) => {
       const product = products.find(p => p.id === pid);
       if (!product) return null;
-      return { product_id: pid, name: product.name, qty, price: Number(product.price), subtotal: Number(product.price) * qty, product };
+      return { product_id: pid, name: product.name, category: product.category, qty, price: Number(product.price), subtotal: Number(product.price) * qty, product };
     })
     .filter(Boolean) as any;
 
