@@ -34,7 +34,7 @@ const CHANGELOG: Release[] = [
       { type: 'security', text: 'Permisos faltantes corregidos en exportar, registrar, editar cliente, enviar email y productos' },
       { type: 'security', text: 'Solo el owner puede activar saldo negativo (allow_negative) — cajeros restringidos' },
       { type: 'security', text: 'Rate limit por PIN en el portal — bloqueo tras 5 intentos fallidos por 5 minutos' },
-      { type: 'security', text: 'Datos sensibles eliminados del portal — ya no expone banco, referencia ni cajero' },
+      { type: 'improve', text: 'Datos de movimientos visibles en el portal — banco, referencia y cajero para control del cliente' },
       { type: 'security', text: 'Auto-login por URL removido — previene ataques de phishing con links maliciosos' },
       { type: 'security', text: 'Detección de IP mejorada — rate limit no bypasseable con headers falsos' },
       { type: 'security', text: 'Búsqueda sanitizada — caracteres especiales ya no pueden inyectar patrones SQL' },

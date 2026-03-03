@@ -73,10 +73,10 @@ export async function GET(req: NextRequest) {
     .eq('is_active', true)
     .order('sort_order', { ascending: true });
 
-  // Get recent transactions (limited fields for public portal)
+  // Get recent transactions
   const { data: transactions } = await supabase
     .from('transactions')
-    .select('id, type, amount, balance_after, note, created_at, items, order_id')
+    .select('id, type, amount, balance_after, note, bank, reference, created_at, cashier_id, items, order_id')
     .eq('customer_id', customer.id)
     .order('created_at', { ascending: false })
     .limit(50);
@@ -96,9 +96,25 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Get cashier names for recharge transactions
+  let cashierMap: Record<string, string> = {};
+  if (transactions) {
+    const cashierIds = Array.from(new Set(transactions.filter(t => t.cashier_id).map(t => t.cashier_id)));
+    if (cashierIds.length > 0) {
+      const { data: cashiers } = await supabase
+        .from('users')
+        .select('id, name')
+        .in('id', cashierIds);
+      if (cashiers) {
+        cashierMap = Object.fromEntries(cashiers.map(c => [c.id, c.name]));
+      }
+    }
+  }
+
   const enrichedTransactions = (transactions || []).map(t => ({
     ...t,
     order: t.order_id ? ordersMap[t.order_id] || null : null,
+    cashier_name: t.cashier_id ? cashierMap[t.cashier_id] || null : null,
   }));
 
   return NextResponse.json({

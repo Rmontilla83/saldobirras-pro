@@ -7,7 +7,8 @@ interface Product { id: string; name: string; description: string | null; catego
 interface CustomerInfo { id: string; name: string; balance: number; balance_held: number; available_balance: number; balance_type: string; qr_code: string; photo_url: string | null; }
 interface Transaction {
   id: string; type: 'recharge' | 'consume'; amount: number; balance_after: number;
-  note: string | null; created_at: string; items: any[] | null;
+  note: string | null; bank: string | null; reference: string | null;
+  created_at: string; cashier_name: string | null; items: any[] | null;
   order_id: string | null;
   order: { id: string; items: any[]; order_type: string; created_at: string; updated_at: string; status: string } | null;
 }
@@ -437,6 +438,9 @@ export default function PortalPage() {
                                     <>
                                       <div className="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Detalle de recarga</div>
                                       <div className="text-[11px] text-slate-300">Monto: <span className="text-emerald-400 font-bold">${tx.amount.toFixed(2)}</span></div>
+                                      {tx.bank && <div className="text-[11px] text-slate-400 mt-0.5">Método: {tx.bank}</div>}
+                                      {tx.reference && <div className="text-[11px] text-slate-400 mt-0.5">Referencia: {tx.reference}</div>}
+                                      {tx.cashier_name && <div className="text-[11px] text-slate-400 mt-0.5">Cajero: {tx.cashier_name}</div>}
                                     </>
                                   )}
                                 </div>
