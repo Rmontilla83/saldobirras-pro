@@ -149,3 +149,57 @@ export async function PUT(req: NextRequest) {
   const { data: updated } = await supabase.from('users').select('*').eq('id', user_id).single();
   return ok(updated);
 }
+
+// DELETE /api/users — delete user (owner only)
+export async function DELETE(req: NextRequest) {
+  const user = await getAuthUser(req);
+  if (!user) return unauthorized();
+  if (user.role !== 'owner') return badRequest('Solo el propietario puede eliminar usuarios');
+
+  const { user_id } = await req.json();
+  if (!user_id) return badRequest('user_id es requerido');
+
+  if (user_id === user.id) {
+    return badRequest('No puedes eliminarte a ti mismo');
+  }
+
+  const supabase = createAdminClient();
+
+  // Verify user belongs to business
+  const { data: existing } = await supabase
+    .from('users')
+    .select('id, name, email, role')
+    .eq('id', user_id)
+    .eq('business_id', user.business_id)
+    .single();
+
+  if (!existing) return badRequest('Usuario no encontrado');
+  if (existing.role === 'owner') return badRequest('No se puede eliminar al propietario');
+
+  // Delete profile from users table
+  const { error: delErr } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', user_id);
+
+  if (delErr) return badRequest(delErr.message);
+
+  // Delete auth user from Supabase Auth
+  const { error: authErr } = await supabase.auth.admin.deleteUser(user_id);
+  if (authErr) {
+    // Profile already deleted, log the auth deletion failure
+    console.error(`[DELETE /api/users] Failed to delete auth user ${user_id}:`, authErr.message);
+  }
+
+  // Audit
+  await supabase.from('audit_log').insert({
+    business_id: user.business_id,
+    user_id: user.id,
+    action: 'delete_user',
+    entity: 'user',
+    entity_id: user_id,
+    details: { name: existing.name, email: existing.email },
+  });
+
+  return ok({ deleted: true });
+}

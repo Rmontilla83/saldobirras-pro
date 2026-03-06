@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useStore } from '@/lib/store';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { formatBalance, isLowBalance } from '@/lib/utils';
-import { Users, DollarSign, Bell, ArrowLeftRight, AlertTriangle, Search, UserCheck, UserX } from 'lucide-react';
+import { Users, DollarSign, Bell, ArrowLeftRight, AlertTriangle, Search, UserCheck, UserX, Star } from 'lucide-react';
 import Avatar from './Avatar';
 import StatusBadge from './StatusBadge';
 import type { Transaction } from '@/lib/types';
@@ -143,6 +143,7 @@ function CustomerRow({ customer: c, onClick }: { customer: any; onClick: () => v
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-sm text-white/90 group-hover:text-amber transition-colors">{c.name}</span>
+          {c.is_vip && <span className="flex items-center gap-0.5 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400"><Star size={8} className="fill-amber-400" />VIP</span>}
           {inactive && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-500/10 text-red-400">Inactivo</span>}
         </div>
         <div className="text-[11px] text-slate-500 truncate">{c.email}{c.phone ? ` · ${c.phone}` : ''}</div>

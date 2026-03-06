@@ -104,6 +104,7 @@ export interface Customer {
   is_active: boolean;
   zone_id: string | null;
   allow_negative: boolean;
+  is_vip: boolean;
   created_at: string;
   updated_at: string;
 }

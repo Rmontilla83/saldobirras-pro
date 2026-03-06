@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const host = req.headers.get('host') || '';
   const { pathname } = req.nextUrl;
 
@@ -14,10 +15,32 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // Let Vercel handle birrasport.com → www redirect via dashboard config
-  // No middleware redirect needed for app.birrasport.com — it's the default
+  // Refresh Supabase session to keep mobile users logged in
+  let response = NextResponse.next({ request: req });
 
-  return NextResponse.next();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll();
+        },
+        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+          cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value));
+          response = NextResponse.next({ request: req });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options as any)
+          );
+        },
+      },
+    }
+  );
+
+  // This refreshes the session if expired, writing updated cookies to the response
+  await supabase.auth.getUser();
+
+  return response;
 }
 
 export const config = {

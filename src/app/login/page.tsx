@@ -12,10 +12,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // Auto-redirect if already authenticated
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.search.includes('kicked=1')) {
-      setError('Tu sesión fue cerrada porque iniciaste sesión en otro dispositivo');
-    }
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) router.replace('/dashboard');
+    });
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -25,15 +27,6 @@ export default function LoginPage() {
     const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (authError || !data.session) { setError('Credenciales incorrectas'); return; }
-
-    // Register single-session ID (non-owner users get previous sessions invalidated)
-    const sessionId = crypto.randomUUID();
-    localStorage.setItem('session_id', sessionId);
-    fetch('/api/sessions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${data.session.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId }),
-    }).catch(() => {});
 
     router.replace('/dashboard');
   };

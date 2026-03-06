@@ -75,6 +75,7 @@ export default function Header({ onRefresh, onLogout }: HeaderProps) {
             </>
           ) : (
             <>
+              <NavBtn icon={<ScanLine size={14}/>} active={view==='scan'} onClick={()=>setView('scan')}>Escanear</NavBtn>
               {can('dashboard') && <NavBtn icon={<LayoutDashboard size={14}/>} active={view==='dashboard'} onClick={()=>setView('dashboard')}>Panel</NavBtn>}
               {can('register') && <NavBtn icon={<UserPlus size={14}/>} active={view==='register'} onClick={()=>setView('register')}>Registrar</NavBtn>}
               {can('transactions') && <NavBtn icon={<ArrowLeftRight size={14}/>} active={view==='transactions'} onClick={()=>setView('transactions')}>Movimientos</NavBtn>}

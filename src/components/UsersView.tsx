@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { createClient } from '@/lib/supabase-browser';
-import { Users, UserPlus, Shield, ShieldCheck, ShieldAlert, Pencil, X, Save, Eye, EyeOff, Power } from 'lucide-react';
+import { Users, UserPlus, Shield, ShieldCheck, ShieldAlert, Pencil, X, Save, Eye, EyeOff, Power, Trash2 } from 'lucide-react';
 import type { User, UserPermissions } from '@/lib/types';
 
 const DEFAULT_PERMS: UserPermissions = {
@@ -69,6 +69,7 @@ export default function UsersView({ showToast }: Props) {
   const [formRole, setFormRole] = useState<string>('cashier');
   const [formPerms, setFormPerms] = useState<UserPermissions>({ ...DEFAULT_PERMS });
   const [saving, setSaving] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
 
   const supabase = createClient();
 
@@ -116,13 +117,16 @@ export default function UsersView({ showToast }: Props) {
   };
 
   const handleSave = async () => {
-    if (!formName) return;
+    if (!formName.trim()) {
+      showToast('Ingresa el nombre del usuario', 'error');
+      return;
+    }
     setSaving(true);
 
     if (editingUser) {
       const res = await apiCall('PUT', {
         user_id: editingUser.id,
-        name: formName,
+        name: formName.trim(),
         role: formRole,
         permissions: formPerms,
         password: formPassword || undefined,
@@ -135,10 +139,24 @@ export default function UsersView({ showToast }: Props) {
         showToast(res?.error || 'Error', 'error');
       }
     } else {
-      if (!formEmail || !formPassword) { setSaving(false); return; }
+      if (!formEmail.trim()) {
+        showToast('Ingresa el correo electrónico', 'error');
+        setSaving(false);
+        return;
+      }
+      if (!formPassword) {
+        showToast('Ingresa una contraseña', 'error');
+        setSaving(false);
+        return;
+      }
+      if (formPassword.length < 6) {
+        showToast('La contraseña debe tener al menos 6 caracteres', 'error');
+        setSaving(false);
+        return;
+      }
       const res = await apiCall('POST', {
-        name: formName,
-        email: formEmail,
+        name: formName.trim(),
+        email: formEmail.trim(),
         password: formPassword,
         role: formRole,
         permissions: formPerms,
@@ -160,6 +178,18 @@ export default function UsersView({ showToast }: Props) {
     if (res?.success) {
       showToast(res.data.is_active ? '✓ Usuario activado' : '✓ Usuario desactivado', 'ok');
       loadUsers();
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingUser) return;
+    const res = await apiCall('DELETE', { user_id: deletingUser.id });
+    if (res?.success) {
+      showToast('✓ Usuario eliminado', 'ok');
+      setDeletingUser(null);
+      loadUsers();
+    } else {
+      showToast(res?.error || 'Error al eliminar', 'error');
     }
   };
 
@@ -224,6 +254,11 @@ export default function UsersView({ showToast }: Props) {
                   <button onClick={() => openEdit(u)} className="w-10 h-10 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center transition-colors" title="Editar">
                     <Pencil size={14} className="text-slate-400" />
                   </button>
+                  {u.id !== currentUser?.id && u.role !== 'owner' && (
+                    <button onClick={() => setDeletingUser(u)} className="w-10 h-10 rounded-lg bg-white/[0.02] hover:bg-red-500/10 flex items-center justify-center transition-colors" title="Eliminar">
+                      <Trash2 size={14} className="text-slate-500 hover:text-red-400" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -304,6 +339,32 @@ export default function UsersView({ showToast }: Props) {
                   {saving ? <span className="w-4 h-4 border-2 border-bg/30 border-t-bg rounded-full animate-spin" /> : <><Save size={13} /> {editingUser ? 'Guardar' : 'Crear'}</>}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingUser && (
+        <div className="fixed inset-0 z-[10001] bg-black/60 backdrop-blur-xl flex items-center justify-center" onClick={() => setDeletingUser(null)}>
+          <div className="bg-[#101828] border border-red-500/20 rounded-3xl p-7 max-w-[400px] w-[92%] shadow-[0_32px_80px_rgba(0,0,0,0.5)] animate-[popScale_0.3s_ease]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center">
+                <Trash2 size={20} className="text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white/90">Eliminar Usuario</h3>
+                <p className="text-[11px] text-slate-500">Esta accion no se puede deshacer</p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-300 mb-6">
+              Vas a eliminar a <span className="font-bold text-white">{deletingUser.name}</span> ({deletingUser.email}). Se eliminara su acceso al sistema permanentemente.
+            </p>
+            <div className="flex gap-2.5">
+              <button onClick={() => setDeletingUser(null)} className="btn-outline flex-1">Cancelar</button>
+              <button onClick={handleDelete} className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl text-sm hover:bg-red-600 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5">
+                <Trash2 size={13} /> Eliminar
+              </button>
             </div>
           </div>
         </div>

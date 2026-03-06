@@ -113,19 +113,25 @@ export default function DashboardPage() {
     // Scan queue removed — each cashier works independently on mobile
   }, [store.user]);
 
-  // Auto-refresh: 15s on mobile, 30s on desktop
+  // Views where polling must be paused to prevent form state loss
+  const isFormView = (v: string) => v === 'register' || v === 'users';
+
+  // Auto-refresh: 15s on mobile, 30s on desktop — paused on form views
   useEffect(() => {
     const ms = (typeof window !== 'undefined' && window.innerWidth <= 700) ? 15000 : 30000;
     const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') loadCustomers();
+      const v = useStore.getState().view;
+      if (document.visibilityState === 'visible' && !isFormView(v)) loadCustomers();
     }, ms);
-    // Also refresh when tab becomes visible
-    const onVisible = () => { if (document.visibilityState === 'visible') loadCustomers(); };
+    const onVisible = () => {
+      const v = useStore.getState().view;
+      if (document.visibilityState === 'visible' && !isFormView(v)) loadCustomers();
+    };
     document.addEventListener('visibilitychange', onVisible);
     return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVisible); };
   }, []);
 
-  // Background order polling — always runs to detect new orders for badge + notification
+  // Background order polling — paused on form views to prevent re-renders
   useEffect(() => {
     const pollOrders = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -135,13 +141,13 @@ export default function DashboardPage() {
         const json = await res.json();
         if (json.success) {
           const pending = json.data.filter((o: any) => o.status === 'pending').length;
-          store.setPendingOrders(pending);
+          useStore.getState().setPendingOrders(pending);
         }
       } catch {}
     };
-    // Only poll in background when NOT on orders view (OrdersView has its own polling)
     const iv = setInterval(() => {
-      if (store.view !== 'orders' && document.visibilityState === 'visible') pollOrders();
+      const v = useStore.getState().view;
+      if (v !== 'orders' && !isFormView(v) && document.visibilityState === 'visible') pollOrders();
     }, 10000);
     pollOrders(); // Initial
     return () => clearInterval(iv);
@@ -295,31 +301,9 @@ export default function DashboardPage() {
     router.replace('/login');
   };
 
-  // Single-session enforcement: validate session every 15s (non-owner only)
-  useEffect(() => {
-    if (!store.user || store.user.role === 'owner') return;
-    const sessionId = localStorage.getItem('session_id');
-    if (!sessionId) return;
-
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      try {
-        const res = await fetch(`/api/sessions?session_id=${encodeURIComponent(sessionId)}`, {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        const json = await res.json();
-        if (json.success && json.data?.valid === false) {
-          localStorage.removeItem('session_id');
-          await supabase.auth.signOut();
-          store.clearAuth();
-          router.replace('/login?kicked=1');
-        }
-      } catch {}
-    };
-    const iv = setInterval(checkSession, 15000);
-    return () => clearInterval(iv);
-  }, [store.user]);
+  // Single-session enforcement disabled — was causing false kicks on mobile
+  // when browser restarts or JWT refreshes generated new session IDs.
+  // Owner can still deactivate users manually from the Users panel.
 
   const loadTransactions = async (customerId?: string) => {
     const url = customerId

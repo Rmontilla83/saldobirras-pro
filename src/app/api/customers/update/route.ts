@@ -35,6 +35,13 @@ export async function PUT(req: NextRequest) {
       }
       updates.allow_negative = allowNeg === 'true';
     }
+    const vip = formData.get('is_vip');
+    if (vip !== null) {
+      if (user.role !== 'owner') {
+        return badRequest('Solo el owner puede modificar is_vip');
+      }
+      updates.is_vip = vip === 'true';
+    }
 
     // Upload new photo if provided
     if (photoFile && photoFile.size > 0) {
@@ -65,6 +72,12 @@ export async function PUT(req: NextRequest) {
     if (body.name) updates.name = body.name;
     if (body.email !== undefined) updates.email = body.email || null;
     if (body.phone !== undefined) updates.phone = body.phone || null;
+    if (body.is_vip !== undefined) {
+      if (user.role !== 'owner') {
+        return badRequest('Solo el owner puede modificar is_vip');
+      }
+      updates.is_vip = body.is_vip === true;
+    }
   }
 
   if (!customer_id) return badRequest('customer_id es requerido');

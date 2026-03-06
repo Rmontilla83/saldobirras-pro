@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { formatBalance, formatMoney, formatDate, isLowBalance, BANKS } from '@/lib/utils';
-import { ArrowLeft, Pencil, Mail, QrCode, Minus, Plus, TrendingUp, TrendingDown, CreditCard, ShoppingCart, Trash2, Package, Link2, ExternalLink, Send } from 'lucide-react';
+import { ArrowLeft, Pencil, Mail, QrCode, Minus, Plus, TrendingUp, TrendingDown, CreditCard, ShoppingCart, Trash2, Package, Link2, ExternalLink, Send, Star, Wifi } from 'lucide-react';
 import Avatar from './Avatar';
 import StatusBadge from './StatusBadge';
 import EditCustomerModal from './EditCustomerModal';
@@ -200,6 +200,11 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-bold text-white/95 truncate">{c.name}</h2>
+                  {(c as any).is_vip && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/20 text-[9px] font-bold text-amber-400 uppercase tracking-wider">
+                      <Star size={10} className="fill-amber-400" /> VIP
+                    </span>
+                  )}
                   {can('edit_customer') && (
                   <button onClick={() => setShowEdit(true)} className="w-9 h-9 rounded-lg bg-white/[0.03] hover:bg-amber/10 flex items-center justify-center transition-colors group">
                     <Pencil size={12} className="text-slate-500 group-hover:text-amber transition-colors"/>
@@ -402,6 +407,48 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
             }} className="btn-outline mt-2 text-[10px] px-3 py-2 flex items-center gap-1.5 mx-auto">
               <CreditCard size={12}/> Imprimir Carnet
             </button>
+
+            {/* VIP toggle (owner only) */}
+            {isOwner && (
+              <div className="mt-4 pt-3 border-t border-white/[0.03]">
+                <button
+                  onClick={async () => {
+                    const supabase = (await import('@/lib/supabase-browser')).createClient();
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) return;
+                    const newVal = !(c as any).is_vip;
+                    const res = await fetch('/api/customers/update', {
+                      method: 'PUT',
+                      headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ customer_id: c.id, is_vip: newVal }),
+                    });
+                    const json = await res.json();
+                    if (json.success) {
+                      useStore.getState().setView('customer', json.data);
+                      showToast(newVal ? 'Cliente marcado como VIP — WiFi Libre' : 'VIP desactivado');
+                    } else {
+                      showToast(json.error || 'Error', 'error');
+                    }
+                  }}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${
+                    (c as any).is_vip
+                      ? 'bg-amber-500/10 border-amber-500/20'
+                      : 'bg-white/[0.02] border-white/[0.05] hover:border-white/10'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Wifi size={14} className={(c as any).is_vip ? 'text-amber-400' : 'text-slate-500'} />
+                    <div className="text-left">
+                      <div className="text-[11px] font-semibold text-white/80">WiFi VIP Libre</div>
+                      <div className="text-[9px] text-slate-500">WiFi sin necesidad de saldo</div>
+                    </div>
+                  </div>
+                  <div className={`w-9 h-5 rounded-full transition-all relative ${(c as any).is_vip ? 'bg-amber-500' : 'bg-white/10'}`}>
+                    <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${(c as any).is_vip ? 'left-[18px]' : 'left-0.5'}`} />
+                  </div>
+                </button>
+              </div>
+            )}
 
             {/* Portal link */}
             <div className="mt-4 pt-3 border-t border-white/[0.03]">
