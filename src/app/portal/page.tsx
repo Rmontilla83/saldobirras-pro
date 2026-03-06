@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Minus, Send, ArrowLeft, Beer, Wine, Coffee, UtensilsCrossed, CircleDot, CheckCircle, Download, MessageSquare, Wallet, Clock, PartyPopper, ChevronDown, ChevronUp, Receipt, LogOut } from 'lucide-react';
 
 interface Product { id: string; name: string; description: string | null; category: string; price: number; is_available: boolean; }
-interface CustomerInfo { id: string; name: string; balance: number; balance_held: number; available_balance: number; balance_type: string; qr_code: string; photo_url: string | null; }
+interface CustomerInfo { id: string; name: string; balance: number; balance_held: number; available_balance: number; balance_type: string; qr_code: string; photo_url: string | null; seat_zone: string | null; seat_row: string | null; seat_number: string | null; }
 interface Transaction {
   id: string; type: 'recharge' | 'consume'; amount: number; balance_after: number;
   note: string | null; bank: string | null; reference: string | null;
@@ -169,7 +169,7 @@ export default function PortalPage() {
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qr_code: customer.qr_code, items, note }),
+        body: JSON.stringify({ qr_code: customer.qr_code, items, note, seat_zone: customer.seat_zone, seat_row: customer.seat_row, seat_number: customer.seat_number }),
       });
       const data = await res.json();
       if (data.success) {
@@ -324,7 +324,20 @@ export default function PortalPage() {
                 )}
                 <div>
                   <h1 className="text-xl font-extrabold">Hola, {customer.name.split(' ')[0]}! 👋</h1>
-                  <p className="text-slate-500 text-sm">¿Qué quieres pedir hoy?</p>
+                  {customer.seat_zone ? (
+                    <p className="text-amber/70 text-xs font-semibold mt-0.5">
+                      📍 {customer.seat_zone === 'sin_zona' ? 'Sin Zona' : (() => {
+                        const parts = [];
+                        const zoneNames: Record<string, string> = { zona_media_a: 'Zona Media A', zona_media_b: 'Zona Media B', zona_media_c: 'Zona Media C', vip_a: 'VIP A', vip_b: 'VIP B', vip_c: 'VIP C', vip_d: 'VIP D', tabloncillo_a: 'Tabloncillo A' };
+                        parts.push(zoneNames[customer.seat_zone] || customer.seat_zone);
+                        if (customer.seat_row) parts.push(`Fila ${customer.seat_row}`);
+                        if (customer.seat_number) parts.push(`Asiento ${customer.seat_number}`);
+                        return parts.join(' · ');
+                      })()}
+                    </p>
+                  ) : (
+                    <p className="text-slate-500 text-sm">¿Qué quieres pedir hoy?</p>
+                  )}
                 </div>
               </div>
             </div>

@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { formatBalance, formatMoney, formatDate, isLowBalance, BANKS } from '@/lib/utils';
-import { ArrowLeft, Pencil, Mail, QrCode, Minus, Plus, TrendingUp, TrendingDown, CreditCard, ShoppingCart, Trash2, Package, Link2, ExternalLink, Send, Star } from 'lucide-react';
+import { ArrowLeft, Pencil, Mail, QrCode, Minus, Plus, TrendingUp, TrendingDown, CreditCard, ShoppingCart, Trash2, Package, Link2, ExternalLink, Send, Star, MapPin } from 'lucide-react';
+import { formatSeatLocation } from '@/data/stadium-seats';
 import Avatar from './Avatar';
 import StatusBadge from './StatusBadge';
 import EditCustomerModal from './EditCustomerModal';
@@ -148,7 +149,7 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
     const res = await fetch('/api/orders', {
       method: 'POST',
       headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customer_id: c.id, items }),
+      body: JSON.stringify({ customer_id: c.id, items, seat_zone: c.seat_zone, seat_row: c.seat_row, seat_number: c.seat_number }),
     });
     const json = await res.json();
     if (json.success) {
@@ -213,6 +214,14 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                 </div>
                 <div className="text-[12px] text-slate-500 mt-0.5">{c.email}</div>
                 {c.phone && <div className="text-[12px] text-slate-500">{c.phone}</div>}
+                {c.seat_zone && (
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    <MapPin size={12} className="text-amber" />
+                    <span className="text-[11px] font-semibold text-amber/80">
+                      {formatSeatLocation(c.seat_zone, c.seat_row, c.seat_number)}
+                    </span>
+                  </div>
+                )}
                 <div className="text-[11px] text-slate-600 mt-1">{formatDate(c.created_at)}</div>
               </div>
             </div>

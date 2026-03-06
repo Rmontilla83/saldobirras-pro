@@ -180,6 +180,9 @@ export default function DashboardPage() {
       if (data.phone) formData.append('phone', data.phone);
       formData.append('balance_type', data.balance_type);
       formData.append('initial_balance', String(data.initial_balance));
+      if (data.seat_zone) formData.append('seat_zone', data.seat_zone);
+      if (data.seat_row) formData.append('seat_row', data.seat_row);
+      if (data.seat_number) formData.append('seat_number', data.seat_number);
       formData.append('photo', data.photo);
 
       const response = await fetch('/api/customers', {

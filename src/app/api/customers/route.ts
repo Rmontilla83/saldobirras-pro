@@ -34,6 +34,9 @@ export async function POST(req: NextRequest) {
   let name: string, email: string | undefined, phone: string | undefined;
   let balance_type: string, initial_balance: number;
   let photoFile: File | null = null;
+  let seat_zone: string | null = null;
+  let seat_row: string | null = null;
+  let seat_number: string | null = null;
 
   if (contentType.includes('multipart/form-data')) {
     const formData = await req.formData();
@@ -43,6 +46,9 @@ export async function POST(req: NextRequest) {
     balance_type = formData.get('balance_type') as string;
     initial_balance = parseFloat(formData.get('initial_balance') as string);
     photoFile = formData.get('photo') as File | null;
+    seat_zone = (formData.get('seat_zone') as string) || null;
+    seat_row = (formData.get('seat_row') as string) || null;
+    seat_number = (formData.get('seat_number') as string) || null;
   } else {
     const body = await req.json();
     name = body.name;
@@ -50,6 +56,9 @@ export async function POST(req: NextRequest) {
     phone = body.phone;
     balance_type = body.balance_type;
     initial_balance = body.initial_balance;
+    seat_zone = body.seat_zone || null;
+    seat_row = body.seat_row || null;
+    seat_number = body.seat_number || null;
   }
 
   if (!name || !balance_type || initial_balance == null) {
@@ -103,6 +112,9 @@ export async function POST(req: NextRequest) {
       initial_balance,
       qr_code,
       pin: pin || null,
+      seat_zone,
+      seat_row,
+      seat_number,
     })
     .select()
     .single();

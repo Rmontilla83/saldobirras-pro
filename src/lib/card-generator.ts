@@ -1,4 +1,5 @@
 import type { Customer } from './types';
+import { formatSeatLocation } from '@/data/stadium-seats';
 
 // Credit card size at 300 DPI
 const DPI = 300;
@@ -188,7 +189,15 @@ export async function generateCard({ customer, photoBase64, logoBase64, marinosG
   }
   if (customer.phone) {
     ctx.fillText(customer.phone, ix, cy);
-    cy += mm(4);
+    cy += mm(3.5);
+  }
+
+  // Seat location
+  if (customer.seat_zone) {
+    ctx.fillStyle = '#C89B28';
+    ctx.font = `bold ${mm(1.5)}px 'Segoe UI', Arial, sans-serif`;
+    ctx.fillText(formatSeatLocation(customer.seat_zone, customer.seat_row, customer.seat_number), ix, cy);
+    cy += mm(3.5);
   }
 
   // PIN

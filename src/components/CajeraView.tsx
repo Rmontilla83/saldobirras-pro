@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { formatMoney, isLowBalance } from '@/lib/utils';
 import { ArrowLeft, ShoppingCart, Plus, Minus, Trash2, MapPin } from 'lucide-react';
+import { formatSeatLocation } from '@/data/stadium-seats';
 import Avatar from './Avatar';
 import StatusBadge from './StatusBadge';
 import ConfirmModal from './ConfirmModal';
@@ -122,7 +123,7 @@ export default function CajeraView({ onConsume, showToast }: Props) {
     const res = await fetch('/api/orders', {
       method: 'POST',
       headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customer_id: c.id, items, zone_id: selectedZone || undefined }),
+      body: JSON.stringify({ customer_id: c.id, items, zone_id: selectedZone || undefined, seat_zone: c.seat_zone, seat_row: c.seat_row, seat_number: c.seat_number }),
     });
     const json = await res.json();
     if (json.success) {
@@ -274,6 +275,16 @@ export default function CajeraView({ onConsume, showToast }: Props) {
         </button>
         <div className="text-base font-bold text-white/90">Pedido de {c.name}</div>
       </div>
+
+      {/* Seat location badge */}
+      {c.seat_zone && (
+        <div className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-xl bg-amber/[0.06] border border-amber/15">
+          <MapPin size={14} className="text-amber" />
+          <span className="text-[13px] font-semibold text-amber/90">
+            {formatSeatLocation(c.seat_zone, c.seat_row, c.seat_number)}
+          </span>
+        </div>
+      )}
 
       {/* Items list */}
       <div className="space-y-1">

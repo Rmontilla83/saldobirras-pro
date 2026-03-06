@@ -28,6 +28,12 @@ export async function PUT(req: NextRequest) {
     if (name) updates.name = name;
     if (email !== null) updates.email = email || null;
     if (phone !== null) updates.phone = phone || null;
+    const seatZone = formData.get('seat_zone');
+    if (seatZone !== null) updates.seat_zone = seatZone || null;
+    const seatRow = formData.get('seat_row');
+    if (seatRow !== null) updates.seat_row = seatRow || null;
+    const seatNumber = formData.get('seat_number');
+    if (seatNumber !== null) updates.seat_number = seatNumber || null;
     const allowNeg = formData.get('allow_negative');
     if (allowNeg !== null) {
       if (user.role !== 'owner') {
@@ -72,6 +78,9 @@ export async function PUT(req: NextRequest) {
     if (body.name) updates.name = body.name;
     if (body.email !== undefined) updates.email = body.email || null;
     if (body.phone !== undefined) updates.phone = body.phone || null;
+    if (body.seat_zone !== undefined) updates.seat_zone = body.seat_zone || null;
+    if (body.seat_row !== undefined) updates.seat_row = body.seat_row || null;
+    if (body.seat_number !== undefined) updates.seat_number = body.seat_number || null;
     if (body.is_vip !== undefined) {
       if (user.role !== 'owner') {
         return badRequest('Solo el owner puede modificar is_vip');

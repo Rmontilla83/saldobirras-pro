@@ -2,17 +2,6 @@ export type BalanceType = 'money' | 'beers';
 export type TxType = 'recharge' | 'consume';
 export type UserRole = 'owner' | 'cashier' | 'auditor';
 export type ProductCategory = 'beer' | 'cocktail' | 'spirit' | 'soft_drink' | 'food' | 'other';
-export type VenueZone = 'general' | 'zone_a' | 'zone_b' | 'zone_c' | 'zone_d' | 'vip' | 'barra';
-
-export const ZONE_LABELS: Record<VenueZone, string> = {
-  general: 'General',
-  zone_a: 'Zona A',
-  zone_b: 'Zona B',
-  zone_c: 'Zona C',
-  zone_d: 'Zona D',
-  vip: 'VIP',
-  barra: 'Barra',
-};
 
 export const CATEGORY_LABELS: Record<ProductCategory, string> = {
   beer: 'Cerveza',
@@ -103,6 +92,9 @@ export interface Customer {
   qr_code: string;
   is_active: boolean;
   zone_id: string | null;
+  seat_zone: string | null;
+  seat_row: string | null;
+  seat_number: string | null;
   allow_negative: boolean;
   is_vip: boolean;
   created_at: string;
@@ -157,6 +149,9 @@ export interface CreateCustomerRequest {
   phone?: string;
   balance_type: BalanceType;
   initial_balance: number;
+  seat_zone?: string;
+  seat_row?: string;
+  seat_number?: string;
 }
 
 export interface ApiResponse<T = unknown> {

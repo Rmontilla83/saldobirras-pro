@@ -17,6 +17,9 @@ interface Order {
   order_type: 'bar' | 'kitchen' | 'mixed' | null;
   zone_name: string | null;
   zone_color: string | null;
+  seat_zone: string | null;
+  seat_row: string | null;
+  seat_number: string | null;
   note: string | null;
   created_by_name: string | null;
   created_at: string;
@@ -284,9 +287,11 @@ export default function OrdersView({ showToast }: Props) {
                         🍔 COCINA
                       </span>
                     )}
-                    {order.zone_name && (
-                      <span className="px-2 py-1 rounded-lg text-[10px] font-semibold" style={{ background: `${order.zone_color}15`, color: order.zone_color || '#F5A623' }}>
-                        {order.zone_name}
+                    {(order.zone_name || order.seat_zone) && (
+                      <span className="px-2 py-1 rounded-lg text-[10px] font-semibold" style={{ background: `${order.zone_color || '#F5A623'}15`, color: order.zone_color || '#F5A623' }}>
+                        {order.zone_name || order.seat_zone}
+                        {order.seat_row && ` · F${order.seat_row}`}
+                        {order.seat_number && ` · A${order.seat_number}`}
                       </span>
                     )}
                   </div>

@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
   if (qr) {
     const result = await supabase
       .from('customers')
-      .select('id, name, balance, balance_held, balance_type, qr_code, photo_url, business_id, allow_negative, is_vip, is_active')
+      .select('id, name, balance, balance_held, balance_type, qr_code, photo_url, business_id, allow_negative, is_vip, is_active, seat_zone, seat_row, seat_number')
       .eq('qr_code', qr)
       .or('is_active.eq.true,is_vip.eq.true')
       .single();
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     // PIN lookup — find across all businesses
     const result = await supabase
       .from('customers')
-      .select('id, name, balance, balance_held, balance_type, qr_code, photo_url, business_id, allow_negative, is_vip, is_active')
+      .select('id, name, balance, balance_held, balance_type, qr_code, photo_url, business_id, allow_negative, is_vip, is_active, seat_zone, seat_row, seat_number')
       .eq('pin', pin)
       .or('is_active.eq.true,is_vip.eq.true');
     if (result.data && result.data.length === 1) {
@@ -131,6 +131,9 @@ export async function GET(req: NextRequest) {
         photo_url: customer.photo_url,
         is_vip: customer.is_vip || false,
         is_active: customer.is_active ?? true,
+        seat_zone: customer.seat_zone || null,
+        seat_row: customer.seat_row || null,
+        seat_number: customer.seat_number || null,
       },
       products: products || [],
       zones: zones || [],

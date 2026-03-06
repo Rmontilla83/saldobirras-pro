@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   const authUser = await getAuthUser(req);
 
   const body = await req.json();
-  const { customer_id, qr_code, items, note, zone_id } = body;
+  const { customer_id, qr_code, items, note, zone_id, seat_zone: bodySeatZone, seat_row: bodySeatRow, seat_number: bodySeatNumber } = body;
 
   if ((!customer_id && !qr_code) || !items || !items.length) {
     return badRequest('customer_id/qr_code e items son requeridos');
@@ -90,20 +90,25 @@ export async function POST(req: NextRequest) {
   if (customer_id) {
     const { data } = await supabase
       .from('customers')
-      .select('id, business_id, balance, balance_held, balance_type, allow_negative')
+      .select('id, business_id, balance, balance_held, balance_type, allow_negative, seat_zone, seat_row, seat_number')
       .eq('id', customer_id)
       .single();
     cust = data;
   } else if (qr_code) {
     const { data } = await supabase
       .from('customers')
-      .select('id, business_id, balance, balance_held, balance_type, allow_negative')
+      .select('id, business_id, balance, balance_held, balance_type, allow_negative, seat_zone, seat_row, seat_number')
       .eq('qr_code', qr_code)
       .single();
     cust = data;
   }
 
   if (!cust) return badRequest('Cliente no encontrado');
+
+  // Seat location: use body values or fall back to customer defaults
+  const seatZone = bodySeatZone || cust.seat_zone || null;
+  const seatRow = bodySeatRow || cust.seat_row || null;
+  const seatNumber = bodySeatNumber || cust.seat_number || null;
 
   const total = items.reduce((s: number, i: any) => s + (Number(i.subtotal) || Number(i.price) * Number(i.qty)), 0);
 
@@ -147,6 +152,9 @@ export async function POST(req: NextRequest) {
         total: barTotal,
         status: 'pending',
         zone_id: zone_id || null,
+        seat_zone: seatZone,
+        seat_row: seatRow,
+        seat_number: seatNumber,
         note: note ? `🍺 Pedido de Barra · ${note}` : '🍺 Pedido de Barra',
         order_type: 'bar',
         created_by: authUser?.id || null,
@@ -163,6 +171,9 @@ export async function POST(req: NextRequest) {
         total: kitchenTotal,
         status: 'pending',
         zone_id: zone_id || null,
+        seat_zone: seatZone,
+        seat_row: seatRow,
+        seat_number: seatNumber,
         note: note ? `🍔 Pedido de Cocina · ${note}` : '🍔 Pedido de Cocina',
         order_type: 'kitchen',
         created_by: authUser?.id || null,
@@ -195,6 +206,9 @@ export async function POST(req: NextRequest) {
       total,
       status: 'pending',
       zone_id: zone_id || null,
+      seat_zone: seatZone,
+      seat_row: seatRow,
+      seat_number: seatNumber,
       note: note || null,
       order_type: orderType,
       created_by: authUser?.id || null,

@@ -16,6 +16,9 @@ interface Order {
   order_type: 'bar' | 'kitchen' | 'mixed' | null;
   zone_name: string | null;
   zone_color: string | null;
+  seat_zone: string | null;
+  seat_row: string | null;
+  seat_number: string | null;
   note: string | null;
   created_at: string;
 }
@@ -463,7 +466,17 @@ function OrderCard({
       </div>
 
       {/* Customer name */}
-      <div className="text-xl font-bold text-white truncate mb-2">{order.customer_name}</div>
+      <div className="text-xl font-bold text-white truncate mb-1">{order.customer_name}</div>
+      {order.seat_zone && (
+        <div className="text-sm text-amber/70 mb-2 flex items-center gap-1">
+          <span>📍</span>
+          <span className="font-semibold">
+            {order.zone_name || order.seat_zone}
+            {order.seat_row && ` · Fila ${order.seat_row}`}
+            {order.seat_number && ` · Asiento ${order.seat_number}`}
+          </span>
+        </div>
+      )}
 
       {/* Type badge */}
       {typeBadge && (
