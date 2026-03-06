@@ -186,9 +186,9 @@ export default function CajeraView({ onConsume, showToast }: Props) {
   // ═══════════════════════════════════════════════
   if (step === 'products') {
     return (
-      <div className="animate-[fadeIn_0.2s_ease] flex flex-col min-h-[100dvh]">
+      <div className="animate-[fadeIn_0.2s_ease] flex flex-col" style={{ minHeight: '100dvh', marginLeft: '-1.25rem', marginRight: '-1.25rem' }}>
         {/* Header */}
-        <div className="flex items-center gap-3 px-2 py-3 sticky top-0 z-40 bg-[#080D19]/95 backdrop-blur-sm">
+        <div className="flex items-center gap-3 px-4 py-3 sticky top-0 z-40 bg-[#080D19]/95 backdrop-blur-sm">
           <button onClick={() => { setStep('profile'); }} className="flex items-center gap-1 text-slate-400 hover:text-amber text-sm font-semibold min-h-[44px] min-w-[44px] transition-colors">
             <ArrowLeft size={18}/>
           </button>
@@ -201,10 +201,10 @@ export default function CajeraView({ onConsume, showToast }: Props) {
         </div>
 
         {/* Category tabs */}
-        <div className="flex gap-2 px-2 pb-3 overflow-x-auto no-scrollbar">
+        <div className="flex gap-1.5 px-4 pb-3 overflow-x-auto scrollbar-hide">
           {categories.map(cat => (
             <button key={cat} onClick={() => setFilterCat(cat)}
-              className={`min-h-[44px] px-4 text-[14px] font-bold rounded-xl border whitespace-nowrap transition-all flex-shrink-0
+              className={`min-h-[40px] px-3 text-[13px] font-bold rounded-xl border whitespace-nowrap transition-all flex-shrink-0
                 ${filterCat === cat ? 'bg-white/[0.07] text-white/90 border-white/10' : 'border-transparent text-slate-600 hover:text-slate-400'}`}>
               {cat === 'all' ? 'Todos' : CATEGORY_LABELS[cat as ProductCategory] || cat}
             </button>
@@ -212,30 +212,30 @@ export default function CajeraView({ onConsume, showToast }: Props) {
         </div>
 
         {/* Products grid */}
-        <div className={`flex-1 overflow-y-auto px-2 ${cartCount > 0 ? 'pb-[100px]' : 'pb-4'}`}>
+        <div className={`flex-1 overflow-y-auto px-3 ${cartCount > 0 ? 'pb-[120px]' : 'pb-4'}`}>
           {products.length === 0 ? (
             <div className="text-center py-12 text-slate-600 text-sm">
               No hay productos disponibles
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2">
               {filteredProducts.map(p => {
                 const qty = cart[p.id] || 0;
                 return (
                   <div key={p.id} onClick={() => addToCart(p.id)}
-                    className={`relative min-h-[80px] p-4 rounded-xl border cursor-pointer transition-all select-none active:scale-[0.97]
+                    className={`relative min-h-[72px] p-3 rounded-xl border cursor-pointer transition-all select-none active:scale-[0.97]
                       ${qty > 0 ? 'border-amber/30 bg-amber/[0.06]' : 'border-white/[0.04] hover:border-white/[0.08]'}`}>
-                    <div className="text-[16px] font-semibold text-white/85 leading-tight">{p.name}</div>
-                    <div className="text-[15px] text-amber font-bold mt-1.5">${Number(p.price).toFixed(2)}</div>
+                    <div className="text-[14px] font-semibold text-white/85 leading-tight pr-6">{p.name}</div>
+                    <div className="text-[14px] text-amber font-bold mt-1">${Number(p.price).toFixed(2)}</div>
                     {qty > 0 && (
-                      <div className="absolute -top-2.5 -right-2.5 w-8 h-8 rounded-full bg-amber font-bold text-black flex items-center justify-center text-[15px] shadow-lg">
+                      <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-amber font-bold text-black flex items-center justify-center text-[13px] shadow-lg">
                         {qty}
                       </div>
                     )}
                     {qty > 0 && (
                       <button onClick={(e) => { e.stopPropagation(); removeFromCart(p.id); }}
-                        className="absolute -bottom-2 -right-2 min-w-[44px] min-h-[44px] rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg active:scale-95">
-                        <Minus size={18} />
+                        className="absolute -bottom-1.5 -right-1.5 w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg active:scale-95">
+                        <Minus size={16} />
                       </button>
                     )}
                   </div>
@@ -245,15 +245,16 @@ export default function CajeraView({ onConsume, showToast }: Props) {
           )}
         </div>
 
-        {/* Bottom bar */}
+        {/* Bottom bar — safe area for iPhone */}
         {cartCount > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#0C1324]/95 backdrop-blur-xl border-t border-white/[0.06] shadow-[0_-8px_30px_rgba(0,0,0,0.4)] px-4 py-4">
-            <div className="flex items-center justify-between">
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#0C1324]/95 backdrop-blur-xl border-t border-white/[0.06] shadow-[0_-8px_30px_rgba(0,0,0,0.4)]"
+            style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
+            <div className="flex items-center justify-between px-4 pt-3 pb-1">
               <div className="text-sm text-slate-300">
-                <span className="font-bold text-white">{cartCount}</span> productos · <span className="font-bold text-amber">${cartTotal.toFixed(2)}</span>
+                <span className="font-bold text-white">{cartCount}</span> · <span className="font-bold text-amber">${cartTotal.toFixed(2)}</span>
               </div>
               <button onClick={() => setStep('review')}
-                className="min-h-[48px] px-6 rounded-xl bg-amber hover:bg-amber-dark text-black font-bold text-sm transition-colors active:scale-[0.97]">
+                className="min-h-[48px] px-5 rounded-xl bg-amber hover:bg-amber-dark text-black font-bold text-sm transition-colors active:scale-[0.97]">
                 VER PEDIDO →
               </button>
             </div>
@@ -267,78 +268,76 @@ export default function CajeraView({ onConsume, showToast }: Props) {
   // STEP 3: Review
   // ═══════════════════════════════════════════════
   return (
-    <div className="animate-[fadeIn_0.2s_ease] px-1">
+    <div className="animate-[fadeIn_0.2s_ease]">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-5">
+      <div className="flex items-center gap-2 mb-4">
         <button onClick={() => setStep('products')} className="flex items-center gap-1 text-slate-400 hover:text-amber text-sm font-semibold min-h-[44px] min-w-[44px] transition-colors">
           <ArrowLeft size={18}/>
         </button>
-        <div className="text-base font-bold text-white/90">Pedido de {c.name}</div>
+        <div className="text-base font-bold text-white/90 truncate">Pedido de {c.name}</div>
       </div>
 
       {/* Seat location badge */}
       {c.seat_zone && (
-        <div className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-xl bg-amber/[0.06] border border-amber/15">
-          <MapPin size={14} className="text-amber" />
-          <span className="text-[13px] font-semibold text-amber/90">
+        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl bg-amber/[0.06] border border-amber/15">
+          <MapPin size={14} className="text-amber flex-shrink-0" />
+          <span className="text-[13px] font-semibold text-amber/90 truncate">
             {formatSeatLocation(c.seat_zone, c.seat_row, c.seat_number)}
           </span>
         </div>
       )}
 
       {/* Items list */}
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         {cartItems.map(item => (
-          <div key={item.product_id} className="flex items-center gap-3 py-3 border-b border-white/[0.04]">
-            <div className="flex items-center gap-2">
-              <button onClick={() => removeFromCart(item.product_id)}
-                className="min-w-[44px] min-h-[44px] rounded-xl bg-red-500/15 text-red-400 flex items-center justify-center active:scale-95 transition-transform">
-                <Minus size={18}/>
-              </button>
-              <span className="text-lg font-bold text-white/90 w-8 text-center tabular-nums">{item.qty}</span>
-              <button onClick={() => addToCart(item.product_id)}
-                className="min-w-[44px] min-h-[44px] rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center active:scale-95 transition-transform">
-                <Plus size={18}/>
-              </button>
+          <div key={item.product_id} className="flex items-center gap-2 py-2.5 border-b border-white/[0.04]">
+            <button onClick={() => removeFromCart(item.product_id)}
+              className="w-9 h-9 flex-shrink-0 rounded-lg bg-red-500/15 text-red-400 flex items-center justify-center active:scale-95 transition-transform">
+              <Minus size={16}/>
+            </button>
+            <span className="text-base font-bold text-white/90 w-6 text-center tabular-nums flex-shrink-0">{item.qty}</span>
+            <button onClick={() => addToCart(item.product_id)}
+              className="w-9 h-9 flex-shrink-0 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center active:scale-95 transition-transform">
+              <Plus size={16}/>
+            </button>
+            <div className="flex-1 min-w-0 ml-1">
+              <div className="text-[14px] font-semibold text-white/85 truncate">{item.name}</div>
+              <div className="text-[11px] text-slate-500">${Number(item.price).toFixed(2)} c/u</div>
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[15px] font-semibold text-white/85 truncate">{item.name}</div>
-              <div className="text-xs text-slate-500">${Number(item.price).toFixed(2)} c/u</div>
-            </div>
-            <div className="text-[15px] font-bold text-white/80 tabular-nums">${item.subtotal.toFixed(2)}</div>
+            <div className="text-[14px] font-bold text-white/80 tabular-nums flex-shrink-0">${item.subtotal.toFixed(2)}</div>
           </div>
         ))}
       </div>
 
-      {/* Total */}
-      <div className="flex items-center justify-between py-4 mt-2 border-t border-white/[0.08]">
-        <span className="text-2xl font-extrabold text-white/95">Total</span>
-        <span className="text-2xl font-extrabold text-amber tabular-nums">${cartTotal.toFixed(2)}</span>
+      {/* Total + Clear */}
+      <div className="flex items-center justify-between py-3 mt-2 border-t border-white/[0.08]">
+        <div>
+          <span className="text-xl font-extrabold text-white/95">Total</span>
+          <button onClick={() => { clearCart(); setStep('products'); }}
+            className="text-red-400 text-xs font-semibold flex items-center gap-1 mt-1">
+            <Trash2 size={12}/> Limpiar
+          </button>
+        </div>
+        <span className="text-xl font-extrabold text-amber tabular-nums">${cartTotal.toFixed(2)}</span>
       </div>
-
-      {/* Clear button */}
-      <button onClick={() => { clearCart(); setStep('products'); }}
-        className="text-red-400 text-sm font-semibold flex items-center gap-1.5 mb-4">
-        <Trash2 size={14}/> Limpiar todo
-      </button>
 
       {/* Zone selector */}
       {zones.length > 0 && (
-        <div className="mb-6">
+        <div className="mb-5">
           <label className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mb-2 flex items-center gap-1">
             <MapPin size={12} /> Zona / Mesa
           </label>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-1.5 flex-wrap">
             <button
               onClick={() => setSelectedZone('')}
-              className={`px-3 py-2.5 rounded-xl text-[12px] font-semibold border transition-all
+              className={`px-2.5 py-2 rounded-xl text-[12px] font-semibold border transition-all
                 ${!selectedZone ? 'bg-white/[0.07] text-white/90 border-white/10' : 'border-transparent text-slate-600'}`}
             >
               Sin zona
             </button>
             {zones.map(z => (
               <button key={z.id} onClick={() => setSelectedZone(z.id)}
-                className={`px-3 py-2.5 rounded-xl text-[12px] font-semibold border transition-all
+                className={`px-2.5 py-2 rounded-xl text-[12px] font-semibold border transition-all
                   ${selectedZone === z.id ? 'border-white/10' : 'border-transparent text-slate-600'}`}
                 style={selectedZone === z.id ? { background: `${z.color}15`, color: z.color } : undefined}
               >
@@ -349,20 +348,19 @@ export default function CajeraView({ onConsume, showToast }: Props) {
         </div>
       )}
 
-      {/* Action buttons */}
-      <div className="space-y-3 pb-8">
-        {/* ENVIAR PEDIDO — único botón para cajeras */}
+      {/* Action button */}
+      <div style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}>
         <button
           onClick={() => setConfirmAction('enviar')}
           disabled={processing || !canAfford}
-          className="w-full min-h-[64px] rounded-2xl bg-blue-500 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white flex flex-col items-center justify-center transition-colors active:scale-[0.98]"
+          className="w-full min-h-[60px] rounded-2xl bg-blue-500 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white flex flex-col items-center justify-center transition-colors active:scale-[0.98]"
         >
           {processing ? (
             <span className="w-5 h-5 border-2 border-blue-300/30 border-t-blue-300 rounded-full animate-spin" />
           ) : (
             <>
-              <span className="text-lg font-bold">📤 ENVIAR PEDIDO {formatMoney(cartTotal)}</span>
-              <span className="text-sm opacity-80">
+              <span className="text-base font-bold">📤 ENVIAR PEDIDO {formatMoney(cartTotal)}</span>
+              <span className="text-xs opacity-80">
                 {canAfford ? 'Se envía a la barra para preparar' : 'Saldo insuficiente'}
               </span>
             </>
