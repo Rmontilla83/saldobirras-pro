@@ -23,13 +23,18 @@ export async function GET(req: NextRequest) {
   const supabase = createAdminClient();
   let query = supabase
     .from('orders')
-    .select('*, customers(name, phone, photo_url), zones(name, color)')
+    .select('*, customers(name, phone, photo_url), zones(name, color), creator:created_by(name)')
     .eq('business_id', user.business_id)
     .order('created_at', { ascending: false })
     .limit(100);
 
   if (status) query = query.eq('status', status);
   if (order_type) query = query.eq('order_type', order_type);
+
+  // Cashiers only see their own orders
+  if (user.role !== 'owner') {
+    query = query.eq('created_by', user.id);
+  }
 
   const { data, error } = await query;
   if (error) return badRequest(error.message);
@@ -41,8 +46,10 @@ export async function GET(req: NextRequest) {
     customer_photo: o.customers?.photo_url,
     zone_name: o.zones?.name,
     zone_color: o.zones?.color,
+    created_by_name: o.creator?.name || null,
     customers: undefined,
     zones: undefined,
+    creator: undefined,
   }));
 
   return ok(orders);
@@ -52,6 +59,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-real-ip') || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
   if (!rateLimit(`orders:${ip}`, 10, 60000)) return rateLimited();
+
+  // Try to get authenticated user (optional — portal orders are public)
+  const authUser = await getAuthUser(req);
 
   const body = await req.json();
   const { customer_id, qr_code, items, note, zone_id } = body;
@@ -139,6 +149,7 @@ export async function POST(req: NextRequest) {
         zone_id: zone_id || null,
         note: note ? `🍺 Pedido de Barra · ${note}` : '🍺 Pedido de Barra',
         order_type: 'bar',
+        created_by: authUser?.id || null,
       })
       .select()
       .single();
@@ -154,6 +165,7 @@ export async function POST(req: NextRequest) {
         zone_id: zone_id || null,
         note: note ? `🍔 Pedido de Cocina · ${note}` : '🍔 Pedido de Cocina',
         order_type: 'kitchen',
+        created_by: authUser?.id || null,
       })
       .select()
       .single();
@@ -185,6 +197,7 @@ export async function POST(req: NextRequest) {
       zone_id: zone_id || null,
       note: note || null,
       order_type: orderType,
+      created_by: authUser?.id || null,
     })
     .select()
     .single();

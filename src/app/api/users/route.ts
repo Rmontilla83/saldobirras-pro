@@ -13,10 +13,11 @@ export async function GET(req: NextRequest) {
     .from('users')
     .select('*')
     .eq('business_id', user.business_id)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .limit(500);
 
   if (error) return badRequest(error.message);
-  return ok(data);
+  return ok(data || []);
 }
 
 // POST /api/users — create new user (owner only)

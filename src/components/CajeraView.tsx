@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { formatMoney, isLowBalance } from '@/lib/utils';
-import { ArrowLeft, ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Plus, Minus, Trash2, MapPin } from 'lucide-react';
 import Avatar from './Avatar';
 import StatusBadge from './StatusBadge';
 import ConfirmModal from './ConfirmModal';
@@ -25,6 +25,8 @@ export default function CajeraView({ onConsume, showToast }: Props) {
   const [filterCat, setFilterCat] = useState('all');
   const [processing, setProcessing] = useState(false);
   const [confirmAction, setConfirmAction] = useState<'cobrar' | 'enviar' | null>(null);
+  const [zones, setZones] = useState<{ id: string; name: string; color: string }[]>([]);
+  const [selectedZone, setSelectedZone] = useState<string>('');
 
   // Auto-refresh customer data every 8s
   useEffect(() => {
@@ -46,19 +48,22 @@ export default function CajeraView({ onConsume, showToast }: Props) {
     return () => clearInterval(iv);
   }, [c?.id, c?.balance]);
 
-  // Load products
+  // Load products and zones
   useEffect(() => {
-    const loadProducts = async () => {
+    const load = async () => {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const res = await fetch('/api/products', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      const json = await res.json();
-      if (json.success) setProducts(json.data.filter((p: Product) => p.is_available));
+      const headers = { Authorization: `Bearer ${session.access_token}` };
+      const [prodRes, zoneRes] = await Promise.all([
+        fetch('/api/products', { headers }),
+        fetch('/api/zones', { headers }),
+      ]);
+      const [prodJson, zoneJson] = await Promise.all([prodRes.json(), zoneRes.json()]);
+      if (prodJson.success) setProducts(prodJson.data.filter((p: Product) => p.is_available));
+      if (zoneJson.success) setZones(zoneJson.data || []);
     };
-    loadProducts();
+    load();
   }, []);
 
   if (!c) return null;
@@ -117,7 +122,7 @@ export default function CajeraView({ onConsume, showToast }: Props) {
     const res = await fetch('/api/orders', {
       method: 'POST',
       headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customer_id: c.id, items }),
+      body: JSON.stringify({ customer_id: c.id, items, zone_id: selectedZone || undefined }),
     });
     const json = await res.json();
     if (json.success) {
@@ -302,43 +307,52 @@ export default function CajeraView({ onConsume, showToast }: Props) {
 
       {/* Clear button */}
       <button onClick={() => { clearCart(); setStep('products'); }}
-        className="text-red-400 text-sm font-semibold flex items-center gap-1.5 mb-6">
+        className="text-red-400 text-sm font-semibold flex items-center gap-1.5 mb-4">
         <Trash2 size={14}/> Limpiar todo
       </button>
 
+      {/* Zone selector */}
+      {zones.length > 0 && (
+        <div className="mb-6">
+          <label className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mb-2 flex items-center gap-1">
+            <MapPin size={12} /> Zona / Mesa
+          </label>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => setSelectedZone('')}
+              className={`px-3 py-2.5 rounded-xl text-[12px] font-semibold border transition-all
+                ${!selectedZone ? 'bg-white/[0.07] text-white/90 border-white/10' : 'border-transparent text-slate-600'}`}
+            >
+              Sin zona
+            </button>
+            {zones.map(z => (
+              <button key={z.id} onClick={() => setSelectedZone(z.id)}
+                className={`px-3 py-2.5 rounded-xl text-[12px] font-semibold border transition-all
+                  ${selectedZone === z.id ? 'border-white/10' : 'border-transparent text-slate-600'}`}
+                style={selectedZone === z.id ? { background: `${z.color}15`, color: z.color } : undefined}
+              >
+                {z.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Action buttons */}
       <div className="space-y-3 pb-8">
-        {/* COBRAR */}
-        <button
-          onClick={() => setConfirmAction('cobrar')}
-          disabled={processing || !canAfford}
-          className="w-full min-h-[64px] rounded-2xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white flex flex-col items-center justify-center transition-colors active:scale-[0.98]"
-        >
-          {processing ? (
-            <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <>
-              <span className="text-lg font-bold">✅ COBRAR {formatMoney(cartTotal)}</span>
-              <span className="text-sm opacity-80">
-                {canAfford ? 'Descuenta del saldo' : 'Saldo insuficiente'}
-              </span>
-            </>
-          )}
-        </button>
-
-        {/* ENVIAR A LA BARRA */}
+        {/* ENVIAR PEDIDO — único botón para cajeras */}
         <button
           onClick={() => setConfirmAction('enviar')}
           disabled={processing || !canAfford}
-          className="w-full min-h-[56px] rounded-2xl bg-blue-500 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white flex flex-col items-center justify-center transition-colors active:scale-[0.98]"
+          className="w-full min-h-[64px] rounded-2xl bg-blue-500 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white flex flex-col items-center justify-center transition-colors active:scale-[0.98]"
         >
           {processing ? (
             <span className="w-5 h-5 border-2 border-blue-300/30 border-t-blue-300 rounded-full animate-spin" />
           ) : (
             <>
-              <span className="text-lg font-bold">📤 ENVIAR PEDIDO</span>
+              <span className="text-lg font-bold">📤 ENVIAR PEDIDO {formatMoney(cartTotal)}</span>
               <span className="text-sm opacity-80">
-                {canAfford ? 'La barra lo prepara' : 'Saldo insuficiente'}
+                {canAfford ? 'Se envía a la barra para preparar' : 'Saldo insuficiente'}
               </span>
             </>
           )}
@@ -346,16 +360,6 @@ export default function CajeraView({ onConsume, showToast }: Props) {
       </div>
 
       {/* Confirm modal */}
-      {confirmAction === 'cobrar' && (
-        <ConfirmModal
-          title={`Cobrar ${formatMoney(cartTotal)}`}
-          message={`${itemsSummary}. Saldo después: ${formatMoney(balanceAfter)}`}
-          confirmLabel="Cobrar"
-          variant="danger"
-          onConfirm={() => { setConfirmAction(null); handleConsumeProducts(); }}
-          onCancel={() => setConfirmAction(null)}
-        />
-      )}
       {confirmAction === 'enviar' && (
         <ConfirmModal
           title="Enviar pedido"

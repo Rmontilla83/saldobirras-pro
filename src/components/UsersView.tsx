@@ -86,7 +86,7 @@ export default function UsersView({ showToast }: Props) {
   const loadUsers = async () => {
     setLoading(true);
     const res = await apiCall('GET');
-    if (res?.success) setUsers(res.data);
+    if (res?.success) setUsers(res.data || []);
     setLoading(false);
   };
 

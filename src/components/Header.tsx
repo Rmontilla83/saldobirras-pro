@@ -64,9 +64,9 @@ export default function Header({ onRefresh, onLogout }: HeaderProps) {
               <NavBtn icon={<ScanLine size={14}/>} active={view==='scan'} onClick={()=>setView('scan')}>Escanear</NavBtn>
               {can('dashboard') && <NavBtn icon={<Users size={14}/>} active={view==='dashboard'} onClick={()=>setView('dashboard')}>Clientes</NavBtn>}
               {can('consume') && <NavBtn icon={<ClipboardList size={14}/>} active={view==='orders'} onClick={()=>setView('orders')} badge={pendingOrders}>Pedidos</NavBtn>}
-              {isOwner && can('register') && <NavBtn icon={<UserPlus size={14}/>} active={view==='register'} onClick={()=>setView('register')}>Nuevo</NavBtn>}
-              {isOwner && can('transactions') && <NavBtn icon={<ArrowLeftRight size={14}/>} active={view==='transactions'} onClick={()=>setView('transactions')}>Movim.</NavBtn>}
-              {isOwner && can('stats') && <NavBtn icon={<BarChart3 size={14}/>} active={view==='stats'} onClick={()=>setView('stats')}>Informes</NavBtn>}
+              {can('register') && <NavBtn icon={<UserPlus size={14}/>} active={view==='register'} onClick={()=>setView('register')}>Nuevo</NavBtn>}
+              {can('transactions') && <NavBtn icon={<ArrowLeftRight size={14}/>} active={view==='transactions'} onClick={()=>setView('transactions')}>Movim.</NavBtn>}
+              {can('stats') && <NavBtn icon={<BarChart3 size={14}/>} active={view==='stats'} onClick={()=>setView('stats')}>Informes</NavBtn>}
               {isOwner && <NavBtn icon={<Package size={14}/>} active={view==='products'} onClick={()=>setView('products')}>Productos</NavBtn>}
               {isOwner && <NavBtn icon={<Tv size={14}/>} active={false} onClick={()=>window.open('/produccion','_blank')}>TV</NavBtn>}
               {isOwner && <NavBtn icon={<ShieldCheck size={14}/>} active={view==='users'} onClick={()=>setView('users')}>Usuarios</NavBtn>}

@@ -19,6 +19,29 @@ import ProductsView from '@/components/ProductsView';
 import ChangelogView from '@/components/ChangelogView';
 import Toast from '@/components/Toast';
 
+function IOSInstallBanner() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+    const dismissed = localStorage.getItem('ios_install_dismissed');
+    if (isIOS && !isStandalone && !dismissed) setShow(true);
+  }, []);
+  if (!show) return null;
+  return (
+    <div className="mb-4 px-4 py-3 rounded-xl bg-blue-500/10 border border-blue-500/20 relative">
+      <button onClick={() => { setShow(false); localStorage.setItem('ios_install_dismissed', '1'); }}
+        className="absolute top-2 right-2 text-slate-500 hover:text-white text-lg leading-none">&times;</button>
+      <div className="text-sm font-bold text-blue-300 mb-1">Instalar app en iPhone</div>
+      <div className="text-[11px] text-slate-400 leading-relaxed">
+        1. Toca el botón <span className="inline-block text-blue-300 font-bold">Compartir</span> (cuadrado con flecha arriba) en Safari<br/>
+        2. Selecciona <span className="inline-block text-blue-300 font-bold">Agregar a pantalla de inicio</span><br/>
+        3. Toca <span className="inline-block text-blue-300 font-bold">Agregar</span>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const store = useStore();
@@ -322,6 +345,8 @@ export default function DashboardPage() {
 
       <div className="relative z-10 max-w-[1060px] mx-auto px-5 pb-12">
         <Header onRefresh={loadCustomers} onLogout={handleLogout} />
+
+        {isMobile && <IOSInstallBanner />}
 
         {/* ═══ PERSISTENT ORDER ALERT — Desktop only, any page ═══ */}
         {!isMobile && store.pendingOrders > 0 && store.view !== 'orders' && (

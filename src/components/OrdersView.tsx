@@ -18,6 +18,7 @@ interface Order {
   zone_name: string | null;
   zone_color: string | null;
   note: string | null;
+  created_by_name: string | null;
   created_at: string;
 }
 
@@ -294,7 +295,11 @@ export default function OrdersView({ showToast }: Props) {
 
                 {/* Customer */}
                 <div className="text-xs font-semibold text-white/85 mb-0.5">{order.customer_name}</div>
-                {order.customer_phone && <div className="text-[10px] text-slate-500 mb-2">{order.customer_phone}</div>}
+                <div className="text-[10px] text-slate-500 mb-2">
+                  {order.created_by_name && <span>Montado por: <span className="text-slate-400 font-medium">{order.created_by_name}</span></span>}
+                  {order.created_by_name && order.customer_phone && ' · '}
+                  {order.customer_phone && <span>{order.customer_phone}</span>}
+                </div>
 
                 {/* Items */}
                 <div className="bg-white/[0.02] rounded-xl p-2.5 mb-3">
