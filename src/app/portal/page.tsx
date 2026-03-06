@@ -85,14 +85,15 @@ export default function PortalPage() {
     setInstallPrompt(null);
   };
 
-  // Auto-refresh customer data every 30s when on menu/done steps
+  // Auto-refresh customer data every 60s + jitter when on menu/done steps
   useEffect(() => {
     if (!customer?.qr_code || step === 'scan') return;
+    const ms = 60000 + Math.floor(Math.random() * 5000);
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         lookupCustomer(customer.qr_code, 'qr');
       }
-    }, 30000);
+    }, ms);
     return () => clearInterval(interval);
   }, [customer?.qr_code, step]);
 

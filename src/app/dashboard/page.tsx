@@ -116,9 +116,10 @@ export default function DashboardPage() {
   // Views where polling must be paused to prevent form state loss
   const isFormView = (v: string) => v === 'register' || v === 'users';
 
-  // Auto-refresh: 15s on mobile, 30s on desktop — paused on form views
+  // Auto-refresh: 30s on mobile, 45s on desktop + jitter — paused on form views
   useEffect(() => {
-    const ms = (typeof window !== 'undefined' && window.innerWidth <= 700) ? 15000 : 30000;
+    const base = (typeof window !== 'undefined' && window.innerWidth <= 700) ? 30000 : 45000;
+    const ms = base + Math.floor(Math.random() * 5000);
     const interval = setInterval(() => {
       const v = useStore.getState().view;
       if (document.visibilityState === 'visible' && !isFormView(v)) loadCustomers();
@@ -148,7 +149,7 @@ export default function DashboardPage() {
     const iv = setInterval(() => {
       const v = useStore.getState().view;
       if (v !== 'orders' && !isFormView(v) && document.visibilityState === 'visible') pollOrders();
-    }, 10000);
+    }, 20000 + Math.floor(Math.random() * 3000));
     pollOrders(); // Initial
     return () => clearInterval(iv);
   }, []);

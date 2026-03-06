@@ -45,7 +45,7 @@ export default function CajeraView({ onConsume, showToast }: Props) {
         }
       }
     };
-    const iv = setInterval(refreshCustomer, 8000);
+    const iv = setInterval(refreshCustomer, 20000 + Math.floor(Math.random() * 3000));
     return () => clearInterval(iv);
   }, [c?.id, c?.balance]);
 

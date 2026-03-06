@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
     .select('id, type, amount, balance_after, note, bank, reference, created_at, cashier_id, items, order_id')
     .eq('customer_id', customer.id)
     .order('created_at', { ascending: false })
-    .limit(50);
+    .limit(20);
 
   // Get order details for transactions that have order_id
   let ordersMap: Record<string, any> = {};

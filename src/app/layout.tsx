@@ -50,8 +50,8 @@ export default function RootLayout({
             window.addEventListener('load', function() {
               navigator.serviceWorker.register('/sw.js')
                 .then(function(reg) {
-                  // Check for updates every 60 seconds
-                  setInterval(function() { reg.update(); }, 60000);
+                  // Check for updates every 5 minutes
+                  setInterval(function() { reg.update(); }, 300000);
                 })
                 .catch(function(err) { console.warn('[SW] Error registro:', err); });
             });

@@ -193,7 +193,7 @@ function ProduccionContent() {
   useEffect(() => {
     if (!authed) return;
     load();
-    const iv = setInterval(load, 5000);
+    const iv = setInterval(load, 10000 + Math.floor(Math.random() * 3000));
     return () => clearInterval(iv);
   }, [authed, load]);
 

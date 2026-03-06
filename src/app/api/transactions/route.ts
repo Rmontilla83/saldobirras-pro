@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const customer_id = searchParams.get('customer_id');
-  const limit = parseInt(searchParams.get('limit') || '100');
+  const limit = Math.min(parseInt(searchParams.get('limit') || '100') || 100, 500);
 
   const supabase = createAdminClient();
   let query = supabase
