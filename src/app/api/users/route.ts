@@ -176,11 +176,21 @@ export async function DELETE(req: NextRequest) {
   if (!existing) return badRequest('Usuario no encontrado');
   if (existing.role === 'owner') return badRequest('No se puede eliminar al propietario');
 
-  // Nullify foreign key references before deleting user
-  await supabase.from('transactions').update({ cashier_id: null }).eq('cashier_id', user_id);
-  await supabase.from('orders').update({ created_by: null }).eq('created_by', user_id);
-  await supabase.from('orders').update({ delivered_by: null }).eq('delivered_by', user_id);
-  await supabase.from('audit_log').update({ user_id: null }).eq('user_id', user_id);
+  // Nullify ALL foreign key references before deleting user
+  // Each must succeed or we abort — check errors explicitly
+  const fkCleanups = await Promise.all([
+    supabase.from('transactions').update({ cashier_id: null } as any).eq('cashier_id', user_id),
+    supabase.from('orders').update({ created_by: null } as any).eq('created_by', user_id),
+    supabase.from('orders').update({ delivered_by: null } as any).eq('delivered_by', user_id),
+    supabase.from('audit_log').update({ user_id: null } as any).eq('user_id', user_id),
+    supabase.from('scan_queue').update({ scanned_by: null } as any).eq('scanned_by', user_id),
+  ]);
+
+  const fkError = fkCleanups.find(r => r.error);
+  if (fkError?.error) {
+    console.error('[DELETE /api/users] FK cleanup failed:', fkError.error.message);
+    return badRequest('Error limpiando referencias: ' + fkError.error.message);
+  }
 
   // Delete profile from users table
   const { error: delErr } = await supabase
@@ -193,11 +203,10 @@ export async function DELETE(req: NextRequest) {
   // Delete auth user from Supabase Auth
   const { error: authErr } = await supabase.auth.admin.deleteUser(user_id);
   if (authErr) {
-    // Profile already deleted, log the auth deletion failure
     console.error(`[DELETE /api/users] Failed to delete auth user ${user_id}:`, authErr.message);
   }
 
-  // Audit
+  // Audit (user already deleted, so use owner's user_id)
   await supabase.from('audit_log').insert({
     business_id: user.business_id,
     user_id: user.id,
