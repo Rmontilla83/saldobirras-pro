@@ -1,5 +1,5 @@
 -- 015: Add VIP flag to customers
--- VIP customers get free WiFi regardless of balance
+-- VIP customers get exclusive benefits
 
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS is_vip BOOLEAN DEFAULT false;
 

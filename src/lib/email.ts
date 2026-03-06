@@ -20,21 +20,6 @@ function portalButton(qrCode: string, label = 'ABRIR PORTAL') {
     </table>`;
 }
 
-function wifiButton() {
-  const wifiUrl = 'https://portal.birrasport.com/wifi';
-  return `
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:12px auto 0;">
-      <tr>
-        <td align="center" style="background:#1A202F;border:1px solid #2C2B2E;border-radius:12px;">
-          <a href="${wifiUrl}" target="_blank" style="display:inline-block;padding:12px 28px;color:#F5A623;font-size:13px;font-weight:700;text-decoration:none;font-family:'Segoe UI',Arial,sans-serif;">
-            &#128246; CONECTAR WiFi GRATIS
-          </a>
-        </td>
-      </tr>
-    </table>
-    <p style="color:#4A5A7A;font-size:10px;text-align:center;margin:6px 0 0;">Con&eacute;ctate a la red <strong style="color:#7B8DB5;">WUIPI-Birrasport</strong> y usa tu PIN</p>`;
-}
-
 // ═══ EMAIL TEMPLATES ═══
 
 function baseTemplate(content: string) {
@@ -126,7 +111,6 @@ function rechargeTemplate(name: string, amount: number, balance: number, balance
     </table>
 
     ${portalButton(qrCode)}
-    ${wifiButton()}
   `);
 }
 
@@ -153,7 +137,6 @@ function lowBalanceTemplate(name: string, balance: number, balanceType: string, 
     </p>
 
     ${portalButton(qrCode)}
-    ${wifiButton()}
   `);
 }
 
@@ -177,7 +160,6 @@ function zeroBalanceTemplate(name: string, balanceType: string, qrCode: string) 
     </p>
 
     ${portalButton(qrCode)}
-    ${wifiButton()}
   `);
 }
 
@@ -266,24 +248,6 @@ function qrEmailTemplate(name: string, balance: number, balanceType: string, qrC
             <tr>
               <td style="color:#F5A623;font-size:20px;width:36px;vertical-align:top;padding:0;">4.</td>
               <td style="color:#7B8DB5;font-size:12px;padding:0;">El monto se descuenta autom&aacute;ticamente de tu saldo</td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top:20px;">
-      <tr>
-        <td style="background:#102234;border:1px solid #0F2D39;border-radius:12px;padding:24px;text-align:center;">
-          <p style="color:#F5A623;font-size:14px;font-weight:700;margin:0 0 8px;">&#128246; WiFi Gratis en BirraSport</p>
-          <p style="color:#7B8DB5;font-size:13px;margin:0 0 16px;">Con&eacute;ctate a la red <strong style="color:#F0F2F8;">WUIPI-Birrasport</strong> e ingresa tu PIN para navegar gratis.</p>
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
-            <tr>
-              <td align="center" style="background:#1A202F;border:1px solid #2C2B2E;border-radius:12px;">
-                <a href="https://portal.birrasport.com/wifi" target="_blank" style="display:inline-block;padding:12px 28px;color:#F5A623;font-size:13px;font-weight:700;text-decoration:none;font-family:'Segoe UI',Arial,sans-serif;">
-                  CONECTAR WiFi
-                </a>
-              </td>
             </tr>
           </table>
         </td>

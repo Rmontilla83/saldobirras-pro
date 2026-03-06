@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { formatBalance, formatMoney, formatDate, isLowBalance, BANKS } from '@/lib/utils';
-import { ArrowLeft, Pencil, Mail, QrCode, Minus, Plus, TrendingUp, TrendingDown, CreditCard, ShoppingCart, Trash2, Package, Link2, ExternalLink, Send, Star, Wifi } from 'lucide-react';
+import { ArrowLeft, Pencil, Mail, QrCode, Minus, Plus, TrendingUp, TrendingDown, CreditCard, ShoppingCart, Trash2, Package, Link2, ExternalLink, Send, Star } from 'lucide-react';
 import Avatar from './Avatar';
 import StatusBadge from './StatusBadge';
 import EditCustomerModal from './EditCustomerModal';
@@ -425,7 +425,7 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                     const json = await res.json();
                     if (json.success) {
                       useStore.getState().setView('customer', json.data);
-                      showToast(newVal ? 'Cliente marcado como VIP — WiFi Libre' : 'VIP desactivado');
+                      showToast(newVal ? 'Cliente marcado como VIP' : 'VIP desactivado');
                     } else {
                       showToast(json.error || 'Error', 'error');
                     }
@@ -437,10 +437,10 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Wifi size={14} className={(c as any).is_vip ? 'text-amber-400' : 'text-slate-500'} />
+                    <Star size={14} className={(c as any).is_vip ? 'text-amber-400 fill-amber-400' : 'text-slate-500'} />
                     <div className="text-left">
-                      <div className="text-[11px] font-semibold text-white/80">WiFi VIP Libre</div>
-                      <div className="text-[9px] text-slate-500">WiFi sin necesidad de saldo</div>
+                      <div className="text-[11px] font-semibold text-white/80">Cliente VIP</div>
+                      <div className="text-[9px] text-slate-500">Acceso a beneficios exclusivos</div>
                     </div>
                   </div>
                   <div className={`w-9 h-5 rounded-full transition-all relative ${(c as any).is_vip ? 'bg-amber-500' : 'bg-white/10'}`}>

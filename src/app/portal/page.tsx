@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Minus, Send, ArrowLeft, Beer, Wine, Coffee, UtensilsCrossed, CircleDot, CheckCircle, Download, MessageSquare, Wallet, Clock, PartyPopper, ChevronDown, ChevronUp, Receipt, LogOut, Wifi } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Send, ArrowLeft, Beer, Wine, Coffee, UtensilsCrossed, CircleDot, CheckCircle, Download, MessageSquare, Wallet, Clock, PartyPopper, ChevronDown, ChevronUp, Receipt, LogOut } from 'lucide-react';
 
 interface Product { id: string; name: string; description: string | null; category: string; price: number; is_available: boolean; }
 interface CustomerInfo { id: string; name: string; balance: number; balance_held: number; available_balance: number; balance_type: string; qr_code: string; photo_url: string | null; }
@@ -70,8 +70,6 @@ export default function PortalPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showStatement, setShowStatement] = useState(false);
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
-  const [wifiHoursLeft, setWifiHoursLeft] = useState<number | null>(null);
-
   // PWA Install
   useEffect(() => {
     const handler = (e: any) => { e.preventDefault(); setInstallPrompt(e); setShowInstallBanner(true); };
@@ -87,20 +85,6 @@ export default function PortalPage() {
     setInstallPrompt(null);
   };
 
-  // Check WiFi session status from localStorage
-  useEffect(() => {
-    const expiresStr = localStorage.getItem('birrasport_wifi_expires');
-    if (expiresStr) {
-      const expires = new Date(expiresStr);
-      const now = new Date();
-      if (expires > now) {
-        setWifiHoursLeft(Math.ceil((expires.getTime() - now.getTime()) / (1000 * 60 * 60)));
-      } else {
-        localStorage.removeItem('birrasport_wifi_expires');
-      }
-    }
-  }, [step]);
-
   // Auto-refresh customer data every 30s when on menu/done steps
   useEffect(() => {
     if (!customer?.qr_code || step === 'scan') return;
@@ -112,7 +96,7 @@ export default function PortalPage() {
     return () => clearInterval(interval);
   }, [customer?.qr_code, step]);
 
-  // Auto-login from sessionStorage or localStorage (WiFi flow saves to localStorage)
+  // Auto-login from sessionStorage or localStorage
   useEffect(() => {
     const savedQr = sessionStorage.getItem('birrasport_customer_qr') || localStorage.getItem('birrasport_customer_qr');
     if (savedQr) {
@@ -138,7 +122,7 @@ export default function PortalPage() {
         setProducts(data.data.products);
         setTransactions(data.data.transactions || []);
         setStep('menu');
-        // Persist session (both storages for WiFi ↔ portal compatibility)
+        // Persist session
         sessionStorage.setItem('birrasport_customer_qr', data.data.customer.qr_code);
         localStorage.setItem('birrasport_customer_qr', data.data.customer.qr_code);
       } else {
@@ -376,28 +360,6 @@ export default function PortalPage() {
                   </p>
                 </div>
               )}
-            </div>
-
-            {/* WiFi status section */}
-            <div className="mb-5 rounded-2xl border-2 border-white/[0.06] bg-white/[0.02] p-4">
-              <div className="flex items-center gap-3">
-                <Wifi size={20} className={wifiHoursLeft ? 'text-emerald-400' : 'text-slate-500'} />
-                <div className="flex-1 min-w-0">
-                  {wifiHoursLeft ? (
-                    <>
-                      <div className="text-sm font-bold text-emerald-400">WiFi conectado</div>
-                      <div className="text-[11px] text-slate-500">Vence en {wifiHoursLeft} {wifiHoursLeft === 1 ? 'hora' : 'horas'}</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-sm font-bold text-slate-300">WiFi BirraSport</div>
-                      <div className="text-[11px] text-slate-500 leading-relaxed">
-                        Conéctate a la red &quot;WUIPI-Birrasport&quot; para navegar gratis
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
             </div>
 
             {/* Account Statement toggle */}
