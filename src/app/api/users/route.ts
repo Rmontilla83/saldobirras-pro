@@ -176,6 +176,12 @@ export async function DELETE(req: NextRequest) {
   if (!existing) return badRequest('Usuario no encontrado');
   if (existing.role === 'owner') return badRequest('No se puede eliminar al propietario');
 
+  // Nullify foreign key references before deleting user
+  await supabase.from('transactions').update({ cashier_id: null }).eq('cashier_id', user_id);
+  await supabase.from('orders').update({ created_by: null }).eq('created_by', user_id);
+  await supabase.from('orders').update({ delivered_by: null }).eq('delivered_by', user_id);
+  await supabase.from('audit_log').update({ user_id: null }).eq('user_id', user_id);
+
   // Delete profile from users table
   const { error: delErr } = await supabase
     .from('users')
