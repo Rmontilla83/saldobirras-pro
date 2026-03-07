@@ -76,7 +76,7 @@ export default function ProductsView({ showToast }: Props) {
     if (!fName || !fPrice) return;
     setSaving(true);
     if (editing) {
-      const res = await apiCall('PUT', { id: editing.id, name: fName, description: fDesc, category: fCat, price: fPrice, is_available: fAvailable });
+      const res = await apiCall('PUT', { product_id: editing.id, name: fName, description: fDesc, category: fCat, price: fPrice, is_available: fAvailable });
       if (res?.success) { showToast('✓ Producto actualizado', 'ok'); setShowForm(false); load(); }
       else showToast(res?.error || 'Error', 'error');
     } else {
@@ -88,7 +88,7 @@ export default function ProductsView({ showToast }: Props) {
   };
 
   const toggleAvailable = async (p: Product) => {
-    const res = await apiCall('PUT', { id: p.id, is_available: !p.is_available });
+    const res = await apiCall('PUT', { product_id: p.id, is_available: !p.is_available });
     if (res?.success) { load(); showToast(res.data.is_available ? '✓ Producto disponible' : '✓ Producto oculto', 'ok'); }
   };
 
