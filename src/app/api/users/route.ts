@@ -6,7 +6,9 @@ import { getAuthUser, unauthorized, badRequest, ok } from '@/lib/api-auth';
 export async function GET(req: NextRequest) {
   const user = await getAuthUser(req);
   if (!user) return unauthorized();
-  if (user.role !== 'owner') return badRequest('Solo el propietario puede gestionar usuarios');
+  if (user.role !== 'owner' && !(user as any).permissions?.manage_users) {
+    return badRequest('No tienes permiso para gestionar usuarios');
+  }
 
   const supabase = createAdminClient();
   const { data, error } = await supabase
@@ -24,7 +26,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const user = await getAuthUser(req);
   if (!user) return unauthorized();
-  if (user.role !== 'owner') return badRequest('Solo el propietario puede crear usuarios');
+  if (user.role !== 'owner' && !(user as any).permissions?.manage_users) {
+    return badRequest('No tienes permiso para crear usuarios');
+  }
 
   const { name, email, password, role, permissions } = await req.json();
 
@@ -33,6 +37,11 @@ export async function POST(req: NextRequest) {
   }
   if (password.length < 6) {
     return badRequest('La contraseña debe tener al menos 6 caracteres');
+  }
+
+  // Only owners can assign the owner role
+  if (role === 'owner' && user.role !== 'owner') {
+    return badRequest('Solo un propietario puede asignar el rol de propietario');
   }
 
   const supabase = createAdminClient();
@@ -91,10 +100,17 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const user = await getAuthUser(req);
   if (!user) return unauthorized();
-  if (user.role !== 'owner') return badRequest('Solo el propietario puede editar usuarios');
+  if (user.role !== 'owner' && !(user as any).permissions?.manage_users) {
+    return badRequest('No tienes permiso para editar usuarios');
+  }
 
   const { user_id, name, role, permissions, is_active, password } = await req.json();
   if (!user_id) return badRequest('user_id es requerido');
+
+  // Only owners can assign the owner role
+  if (role === 'owner' && user.role !== 'owner') {
+    return badRequest('Solo un propietario puede asignar el rol de propietario');
+  }
 
   // Cannot edit yourself to non-owner
   if (user_id === user.id && role && role !== 'owner') {
@@ -154,7 +170,9 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const user = await getAuthUser(req);
   if (!user) return unauthorized();
-  if (user.role !== 'owner') return badRequest('Solo el propietario puede eliminar usuarios');
+  if (user.role !== 'owner' && !(user as any).permissions?.manage_users) {
+    return badRequest('No tienes permiso para eliminar usuarios');
+  }
 
   const { user_id } = await req.json();
   if (!user_id) return badRequest('user_id es requerido');

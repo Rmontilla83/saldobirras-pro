@@ -69,7 +69,7 @@ export default function Header({ onRefresh, onLogout }: HeaderProps) {
               {can('stats') && <NavBtn icon={<BarChart3 size={14}/>} active={view==='stats'} onClick={()=>setView('stats')}>Informes</NavBtn>}
               {isOwner && <NavBtn icon={<Package size={14}/>} active={view==='products'} onClick={()=>setView('products')}>Productos</NavBtn>}
               {isOwner && <NavBtn icon={<Tv size={14}/>} active={false} onClick={()=>window.open('/produccion','_blank')}>TV</NavBtn>}
-              {isOwner && <NavBtn icon={<ShieldCheck size={14}/>} active={view==='users'} onClick={()=>setView('users')}>Usuarios</NavBtn>}
+              {can('manage_users') && <NavBtn icon={<ShieldCheck size={14}/>} active={view==='users'} onClick={()=>setView('users')}>Usuarios</NavBtn>}
               {isOwner && <NavBtn icon={<Sparkles size={14}/>} active={view==='changelog'} onClick={handleOpenChangelog} dot={hasNewUpdates}>Novedades</NavBtn>}
               <NavBtn icon={<LogOut size={14}/>} active={false} onClick={onLogout}></NavBtn>
             </>
@@ -83,7 +83,7 @@ export default function Header({ onRefresh, onLogout }: HeaderProps) {
               {can('stats') && <NavBtn icon={<BarChart3 size={14}/>} active={view==='stats'} onClick={()=>setView('stats')}>Informes</NavBtn>}
               {isOwner && <NavBtn icon={<Package size={14}/>} active={view==='products'} onClick={()=>setView('products')}>Productos</NavBtn>}
               {isOwner && <NavBtn icon={<Tv size={14}/>} active={false} onClick={()=>window.open('/produccion','_blank')}>Producción</NavBtn>}
-              {isOwner && <NavBtn icon={<ShieldCheck size={14}/>} active={view==='users'} onClick={()=>setView('users')}>Usuarios</NavBtn>}
+              {can('manage_users') && <NavBtn icon={<ShieldCheck size={14}/>} active={view==='users'} onClick={()=>setView('users')}>Usuarios</NavBtn>}
               {isOwner && <NavBtn icon={<Sparkles size={14}/>} active={view==='changelog'} onClick={handleOpenChangelog} dot={hasNewUpdates}>Novedades</NavBtn>}
               <NavBtn icon={<RefreshCw size={14}/>} active={false} onClick={onRefresh}></NavBtn>
               <NavBtn icon={<LogOut size={14}/>} active={false} onClick={onLogout}></NavBtn>

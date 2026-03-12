@@ -382,7 +382,7 @@ export default function DashboardPage() {
         {store.view === 'scan' && (
           <ScanView onScan={scanQR} onSearch={searchCustomer} />
         )}
-        {store.view === 'users' && store.user?.role === 'owner' && (
+        {store.view === 'users' && (store.user?.role === 'owner' || store.user?.permissions?.manage_users) && (
           <UsersView showToast={showToast} />
         )}
         {store.view === 'products' && store.user?.role === 'owner' && (

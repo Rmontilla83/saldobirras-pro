@@ -294,9 +294,42 @@ export default function UsersView({ showToast }: Props) {
                 </div>
               </div>
 
-              {/* Role presets */}
+              {/* Role selector */}
               {(!editingUser || editingUser.role !== 'owner') && (
                 <>
+                  <div>
+                    <label className="label">Rol</label>
+                    <div className="flex gap-1.5">
+                      {([
+                        ...(currentUser?.role === 'owner' ? [{ value: 'owner' as const, label: 'Propietario', icon: <ShieldAlert size={14} />, desc: 'Acceso total al sistema' }] : []),
+                        { value: 'cashier' as const, label: 'Cajero', icon: <Shield size={14} />, desc: 'Permisos configurables' },
+                        { value: 'auditor' as const, label: 'Auditor', icon: <ShieldCheck size={14} />, desc: 'Solo lectura' },
+                      ]).map(r => (
+                        <button key={r.value} onClick={() => {
+                          setFormRole(r.value);
+                          if (r.value === 'owner') {
+                            const allPerms = { ...DEFAULT_PERMS };
+                            (Object.keys(allPerms) as (keyof UserPermissions)[]).forEach(k => allPerms[k] = true);
+                            setFormPerms(allPerms);
+                          }
+                        }}
+                          className={`flex-1 flex flex-col items-center gap-1 px-3 py-3 rounded-xl text-center transition-all duration-150 border
+                            ${formRole === r.value
+                              ? 'bg-amber/[0.06] border-amber/20 text-amber'
+                              : 'bg-transparent border-slate-800/50 text-slate-500 hover:border-slate-700'}`}>
+                          {r.icon}
+                          <span className="text-[11px] font-semibold">{r.label}</span>
+                          <span className="text-[9px] opacity-60">{r.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                    {formRole === 'owner' && (
+                      <p className="text-[10px] text-amber/70 mt-1.5">⚠ El propietario tiene acceso total. Los permisos individuales se ignoran.</p>
+                    )}
+                  </div>
+
+                  {formRole !== 'owner' && (
+                  <>
                   <div>
                     <label className="label">Plantilla de permisos</label>
                     <div className="flex gap-1.5 flex-wrap">
@@ -308,7 +341,6 @@ export default function UsersView({ showToast }: Props) {
                     </div>
                   </div>
 
-                  {/* Granular permissions */}
                   <div>
                     <label className="label">Permisos individuales</label>
                     <div className="grid grid-cols-2 gap-1.5">
@@ -330,6 +362,8 @@ export default function UsersView({ showToast }: Props) {
                       ))}
                     </div>
                   </div>
+                  </>
+                  )}
                 </>
               )}
 
