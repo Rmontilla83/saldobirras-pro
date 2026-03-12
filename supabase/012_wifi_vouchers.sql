@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS wifi_vouchers (
   UNIQUE(business_id, code)
 );
 
--- status: 'available', 'assigned', 'used', 'expired'
+-- status: 'available' (listo para repartir), 'assigned' (ya se le dio a un cliente)
 
 CREATE INDEX idx_voucher_status ON wifi_vouchers(status);
 CREATE INDEX idx_voucher_customer ON wifi_vouchers(customer_id);

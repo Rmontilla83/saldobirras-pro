@@ -21,8 +21,6 @@ export async function GET(req: NextRequest) {
     total: data.length,
     available: data.filter((v: any) => v.status === 'available').length,
     assigned: data.filter((v: any) => v.status === 'assigned').length,
-    used: data.filter((v: any) => v.status === 'used').length,
-    expired: data.filter((v: any) => v.status === 'expired').length,
     alert: false,
   };
   stats.alert = stats.available < 10;

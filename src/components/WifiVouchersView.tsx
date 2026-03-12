@@ -13,8 +13,6 @@ interface VoucherStats {
   total: number;
   available: number;
   assigned: number;
-  used: number;
-  expired: number;
   alert: boolean;
 }
 
@@ -134,14 +132,10 @@ export default function WifiVouchersView({ showToast }: Props) {
     const map: Record<string, string> = {
       available: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
       assigned: 'bg-blue-500/15 text-blue-400 border-blue-500/20',
-      used: 'bg-slate-500/15 text-slate-400 border-slate-500/20',
-      expired: 'bg-red-500/15 text-red-400 border-red-500/20',
     };
     const labels: Record<string, string> = {
       available: 'Disponible',
       assigned: 'Asignado',
-      used: 'Usado',
-      expired: 'Expirado',
     };
     return (
       <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-semibold border ${map[status] || ''}`}>
@@ -163,7 +157,7 @@ export default function WifiVouchersView({ showToast }: Props) {
 
       {/* Stats cards */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div className={`card text-center ${stats.available < 10 ? '!border-red-500/30 !bg-red-500/[0.03]' : ''}`}>
             <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Disponibles</div>
             <div className={`text-2xl font-extrabold ${stats.available < 10 ? 'text-red-400' : 'text-emerald-400'}`}>
@@ -180,12 +174,8 @@ export default function WifiVouchersView({ showToast }: Props) {
             <div className="text-2xl font-extrabold text-blue-400">{stats.assigned}</div>
           </div>
           <div className="card text-center">
-            <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Usados</div>
-            <div className="text-2xl font-extrabold text-slate-400">{stats.used}</div>
-          </div>
-          <div className="card text-center">
             <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Total</div>
-            <div className="text-2xl font-extrabold text-amber">{stats.total}</div>
+            <div className="text-2xl font-extrabold text-slate-400">{stats.total}</div>
           </div>
         </div>
       )}
@@ -275,14 +265,14 @@ export default function WifiVouchersView({ showToast }: Props) {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xs font-bold text-white/80">Vouchers Recientes</h3>
           <div className="flex gap-0.5">
-            {['all', 'available', 'assigned', 'used'].map(s => (
+            {['all', 'available', 'assigned'].map(s => (
               <button
                 key={s}
                 onClick={() => setFilter(s)}
                 className={`px-2.5 py-1.5 text-[10px] rounded-lg font-semibold border transition-all
                   ${filter === s ? 'bg-amber/10 text-amber border-amber/20' : 'border-transparent text-slate-500 hover:text-slate-400'}`}
               >
-                {s === 'all' ? 'Todos' : s === 'available' ? 'Disponibles' : s === 'assigned' ? 'Asignados' : 'Usados'}
+                {s === 'all' ? 'Todos' : s === 'available' ? 'Disponibles' : 'Asignados'}
               </button>
             ))}
           </div>

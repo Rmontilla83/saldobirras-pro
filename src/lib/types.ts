@@ -164,7 +164,7 @@ export interface WifiVoucher {
   id: string;
   code: string;
   customer_id: string | null;
-  status: 'available' | 'assigned' | 'used' | 'expired';
+  status: 'available' | 'assigned';
   assigned_at: string | null;
   created_at: string;
   // Joined
