@@ -66,7 +66,7 @@ function baseTemplate(content: string) {
 </html>`;
 }
 
-function rechargeTemplate(name: string, amount: number, balance: number, balanceType: string, qrCode: string, bank?: string, reference?: string) {
+function rechargeTemplate(name: string, amount: number, balance: number, balanceType: string, qrCode: string, bank?: string, reference?: string, wifiVoucherCode?: string) {
   const unit = balanceType === 'money' ? '$' : '';
   const suffix = balanceType === 'beers' ? ' 🍺' : '';
   const bankInfo = bank ? `<p style="color:#7B8DB5;font-size:13px;margin:8px 0 0;">M&eacute;todo: <strong style="color:#F0F2F8;">${bank}</strong>${reference ? ` &middot; Ref: <strong style="color:#F0F2F8;">${reference}</strong>` : ''}</p>` : '';
@@ -109,6 +109,8 @@ function rechargeTemplate(name: string, amount: number, balance: number, balance
         </td>
       </tr>
     </table>
+
+    ${wifiVoucherCode ? wifiVoucherSection(wifiVoucherCode) : ''}
 
     ${portalButton(qrCode)}
   `);
@@ -163,7 +165,7 @@ function zeroBalanceTemplate(name: string, balanceType: string, qrCode: string) 
   `);
 }
 
-function qrEmailTemplate(name: string, balance: number, balanceType: string, qrCode: string, pin?: string) {
+function qrEmailTemplate(name: string, balance: number, balanceType: string, qrCode: string, pin?: string, wifiVoucherCode?: string) {
   const unit = balanceType === 'money' ? '$' : '';
   const suffix = balanceType === 'beers' ? ' 🍺' : '';
   const portalUrl = `https://portal.birrasport.com/portal?qr=${encodeURIComponent(qrCode)}`;
@@ -254,9 +256,61 @@ function qrEmailTemplate(name: string, balance: number, balanceType: string, qrC
       </tr>
     </table>
 
+    ${wifiVoucherCode ? wifiVoucherSection(wifiVoucherCode) : ''}
+
     <p style="color:#7B8DB5;font-size:12px;text-align:center;margin:20px 0 0;">
       💡 <strong style="color:#F0F2F8;">Tip:</strong> Instala la app en tu tel&eacute;fono desde el portal para acceso r&aacute;pido
     </p>
+  `);
+}
+
+// ═══ WIFI VOUCHER TEMPLATES ═══
+
+function wifiVoucherSection(voucherCode: string): string {
+  return `
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top:24px;">
+      <tr>
+        <td style="background:#0F172A;border:1px solid #D4A017;border-radius:12px;padding:20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td align="center" style="padding-bottom:12px;">
+                <span style="font-size:24px;">&#128246;</span>
+                <span style="font-size:18px;font-weight:bold;color:#D4A017;margin-left:8px;font-family:'Segoe UI',Arial,sans-serif;">WiFi BirraSport</span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#1E293B;border-radius:8px;">
+                  <tr>
+                    <td align="center" style="padding:16px;">
+                      <p style="color:#94A3B8;font-size:12px;margin:0 0 4px;">Red WiFi</p>
+                      <p style="color:#FFFFFF;font-size:16px;font-weight:bold;margin:0 0 12px;font-family:'Segoe UI',Arial,sans-serif;">Wuipi-Vouchers</p>
+                      <p style="color:#94A3B8;font-size:12px;margin:0 0 4px;">Tu c&oacute;digo de acceso</p>
+                      <p style="color:#D4A017;font-size:28px;font-weight:bold;letter-spacing:3px;font-family:'Courier New',monospace;margin:0;">${voucherCode}</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding-top:12px;">
+                <p style="color:#94A3B8;font-size:12px;margin:4px 0;">1. Con&eacute;ctate a la red <strong style="color:#FFFFFF;">Wuipi-Vouchers</strong></p>
+                <p style="color:#94A3B8;font-size:12px;margin:4px 0;">2. Espera que aparezca la pantalla de login</p>
+                <p style="color:#94A3B8;font-size:12px;margin:4px 0;">3. Ingresa tu c&oacute;digo de acceso</p>
+                <p style="color:#64748B;font-size:12px;margin:8px 0 0;">V&aacute;lido para 1 dispositivo &middot; 24 horas desde que te conectas</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>`;
+}
+
+function wifiVoucherEmailTemplate(customerName: string, voucherCode: string): string {
+  return baseTemplate(`
+    <p style="color:#F0F2F8;font-size:16px;margin:0 0 4px;">Hola <strong>${customerName}</strong> &#128075;</p>
+    <p style="color:#CBD5E1;font-size:14px;margin:0 0 20px;">Aqu&iacute; tienes tu c&oacute;digo de acceso WiFi para BirraSport:</p>
+    ${wifiVoucherSection(voucherCode)}
   `);
 }
 
@@ -264,14 +318,14 @@ function qrEmailTemplate(name: string, balance: number, balanceType: string, qrC
 
 export async function sendRechargeEmail(
   to: string, name: string, amount: number, balance: number,
-  balanceType: string, qrCode: string, bank?: string, reference?: string
+  balanceType: string, qrCode: string, bank?: string, reference?: string, wifiVoucherCode?: string
 ) {
   try {
     const { data, error } = await resend.emails.send({
       from: FROM,
       to,
       subject: `✅ Recarga exitosa — ${balanceType === 'money' ? '$' : ''}${amount.toFixed(balanceType === 'money' ? 2 : 0)}${balanceType === 'beers' ? ' cervezas' : ''}`,
-      html: rechargeTemplate(name, amount, balance, balanceType, qrCode, bank, reference),
+      html: rechargeTemplate(name, amount, balance, balanceType, qrCode, bank, reference, wifiVoucherCode),
     });
     console.log('📧 Recharge email sent:', to, data?.id);
     return { success: true, id: data?.id };
@@ -313,13 +367,29 @@ export async function sendZeroBalanceEmail(to: string, name: string, balanceType
   }
 }
 
-export async function sendQREmail(to: string, name: string, balance: number, balanceType: string, qrCode: string, pin?: string) {
+export async function sendWifiVoucherEmail(to: string, name: string, voucherCode: string) {
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM,
+      to,
+      subject: `📶 Tu código WiFi para BirraSport`,
+      html: wifiVoucherEmailTemplate(name, voucherCode),
+    });
+    console.log('📧 WiFi voucher email sent:', to, data?.id);
+    return { success: true, id: data?.id };
+  } catch (err) {
+    console.error('📧 WiFi voucher email failed:', err);
+    return { success: false, error: err };
+  }
+}
+
+export async function sendQREmail(to: string, name: string, balance: number, balanceType: string, qrCode: string, pin?: string, wifiVoucherCode?: string) {
   try {
     const { data, error } = await resend.emails.send({
       from: FROM,
       to,
       subject: `🍺 Bienvenido a BirraSport — Tu acceso y portal de pedidos`,
-      html: qrEmailTemplate(name, balance, balanceType, qrCode, pin),
+      html: qrEmailTemplate(name, balance, balanceType, qrCode, pin, wifiVoucherCode),
     });
     console.log('📧 QR email sent:', to, data?.id);
     return { success: true, id: data?.id };

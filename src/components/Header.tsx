@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { useIsMobile } from '@/lib/useIsMobile';
-import { LayoutDashboard, UserPlus, ArrowLeftRight, BarChart3, RefreshCw, ScanLine, Users, Smartphone, Monitor, ShieldCheck, LogOut, Package, ClipboardList, Sparkles, Tv } from 'lucide-react';
+import { LayoutDashboard, UserPlus, ArrowLeftRight, BarChart3, RefreshCw, ScanLine, Users, Smartphone, Monitor, ShieldCheck, LogOut, Package, ClipboardList, Sparkles, Tv, Wifi } from 'lucide-react';
 
 const LATEST_VERSION = 'v10.2';
 
 interface HeaderProps { onRefresh: () => void; onLogout: () => void; }
 
 export default function Header({ onRefresh, onLogout }: HeaderProps) {
-  const { view, setView, synced, user, pendingOrders } = useStore();
+  const { view, setView, synced, user, pendingOrders, lowVouchers } = useStore();
   const isMobile = useIsMobile();
   const isOwner = user?.role === 'owner';
   const perms = user?.permissions || {} as any;
@@ -68,6 +68,7 @@ export default function Header({ onRefresh, onLogout }: HeaderProps) {
               {can('transactions') && <NavBtn icon={<ArrowLeftRight size={14}/>} active={view==='transactions'} onClick={()=>setView('transactions')}>Movim.</NavBtn>}
               {can('stats') && <NavBtn icon={<BarChart3 size={14}/>} active={view==='stats'} onClick={()=>setView('stats')}>Informes</NavBtn>}
               {isOwner && <NavBtn icon={<Package size={14}/>} active={view==='products'} onClick={()=>setView('products')}>Productos</NavBtn>}
+              {isOwner && <NavBtn icon={<Wifi size={14}/>} active={view==='wifi-vouchers'} onClick={()=>setView('wifi-vouchers')} dot={lowVouchers}>WiFi</NavBtn>}
               {isOwner && <NavBtn icon={<Tv size={14}/>} active={false} onClick={()=>window.open('/produccion','_blank')}>TV</NavBtn>}
               {can('manage_users') && <NavBtn icon={<ShieldCheck size={14}/>} active={view==='users'} onClick={()=>setView('users')}>Usuarios</NavBtn>}
               {isOwner && <NavBtn icon={<Sparkles size={14}/>} active={view==='changelog'} onClick={handleOpenChangelog} dot={hasNewUpdates}>Novedades</NavBtn>}
@@ -82,6 +83,7 @@ export default function Header({ onRefresh, onLogout }: HeaderProps) {
               {can('consume') && <NavBtn icon={<ClipboardList size={14}/>} active={view==='orders'} onClick={()=>setView('orders')} badge={pendingOrders}>Pedidos</NavBtn>}
               {can('stats') && <NavBtn icon={<BarChart3 size={14}/>} active={view==='stats'} onClick={()=>setView('stats')}>Informes</NavBtn>}
               {isOwner && <NavBtn icon={<Package size={14}/>} active={view==='products'} onClick={()=>setView('products')}>Productos</NavBtn>}
+              {isOwner && <NavBtn icon={<Wifi size={14}/>} active={view==='wifi-vouchers'} onClick={()=>setView('wifi-vouchers')} dot={lowVouchers}>WiFi</NavBtn>}
               {isOwner && <NavBtn icon={<Tv size={14}/>} active={false} onClick={()=>window.open('/produccion','_blank')}>Producción</NavBtn>}
               {can('manage_users') && <NavBtn icon={<ShieldCheck size={14}/>} active={view==='users'} onClick={()=>setView('users')}>Usuarios</NavBtn>}
               {isOwner && <NavBtn icon={<Sparkles size={14}/>} active={view==='changelog'} onClick={handleOpenChangelog} dot={hasNewUpdates}>Novedades</NavBtn>}

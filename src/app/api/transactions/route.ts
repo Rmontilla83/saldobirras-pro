@@ -86,11 +86,34 @@ export async function POST(req: NextRequest) {
       .eq('id', customer_id)
       .single();
 
+    // Assign WiFi voucher (never blocks recharge)
+    let wifiVoucherCode: string | undefined;
+    try {
+      const { data: available } = await supabase
+        .from('wifi_vouchers')
+        .select('*')
+        .eq('business_id', user.business_id)
+        .eq('status', 'available')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (available) {
+        await supabase
+          .from('wifi_vouchers')
+          .update({ customer_id, status: 'assigned', assigned_at: new Date().toISOString() })
+          .eq('id', available.id);
+        wifiVoucherCode = available.code;
+      }
+    } catch (e) {
+      console.warn('WiFi voucher assignment failed:', e);
+    }
+
     if (customer?.email) {
       sendRechargeEmail(
         customer.email, customer.name, amount,
         result.new_balance, customer.balance_type,
-        customer.qr_code, bank, reference
+        customer.qr_code, bank, reference, wifiVoucherCode
       ).catch(console.error);
     }
 

@@ -14,13 +14,14 @@ interface AppState {
   updateCustomer: (customer: Customer) => void;
 
   // UI
-  view: 'dashboard' | 'register' | 'customer' | 'transactions' | 'stats' | 'scan' | 'settings' | 'users' | 'products' | 'orders' | 'changelog';
+  view: 'dashboard' | 'register' | 'customer' | 'transactions' | 'stats' | 'scan' | 'settings' | 'users' | 'products' | 'orders' | 'changelog' | 'wifi-vouchers';
   selectedCustomer: Customer | null;
   scanPopup: Customer | null;
   search: string;
   loading: boolean;
   synced: boolean;
   pendingOrders: number;
+  lowVouchers: boolean;
 
   setView: (view: AppState['view'], customer?: Customer) => void;
   setScanPopup: (customer: Customer | null) => void;
@@ -28,6 +29,7 @@ interface AppState {
   setLoading: (loading: boolean) => void;
   setSynced: (synced: boolean) => void;
   setPendingOrders: (count: number) => void;
+  setLowVouchers: (low: boolean) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -57,6 +59,7 @@ export const useStore = create<AppState>((set) => ({
   loading: false,
   synced: false,
   pendingOrders: 0,
+  lowVouchers: false,
 
   setView: (view, customer) =>
     set({
@@ -70,4 +73,5 @@ export const useStore = create<AppState>((set) => ({
   setLoading: (loading) => set({ loading }),
   setSynced: (synced) => set({ synced }),
   setPendingOrders: (pendingOrders) => set({ pendingOrders }),
+  setLowVouchers: (lowVouchers) => set({ lowVouchers }),
 }));

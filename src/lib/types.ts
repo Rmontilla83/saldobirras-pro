@@ -160,6 +160,17 @@ export interface ApiResponse<T = unknown> {
   error?: string;
 }
 
+export interface WifiVoucher {
+  id: string;
+  code: string;
+  customer_id: string | null;
+  status: 'available' | 'assigned' | 'used' | 'expired';
+  assigned_at: string | null;
+  created_at: string;
+  // Joined
+  customer_name?: string;
+}
+
 // Dashboard stats
 export interface DashboardStats {
   total_customers: number;

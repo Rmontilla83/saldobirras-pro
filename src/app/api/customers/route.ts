@@ -134,9 +134,32 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Send welcome email with QR, PIN, and portal invitation
+  // Assign WiFi voucher for welcome email (never blocks registration)
+  let wifiVoucherCode: string | undefined;
+  try {
+    const { data: available } = await supabase
+      .from('wifi_vouchers')
+      .select('*')
+      .eq('business_id', user.business_id)
+      .eq('status', 'available')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (available) {
+      await supabase
+        .from('wifi_vouchers')
+        .update({ customer_id: customer.id, status: 'assigned', assigned_at: new Date().toISOString() })
+        .eq('id', available.id);
+      wifiVoucherCode = available.code;
+    }
+  } catch (e) {
+    console.warn('WiFi voucher assignment failed:', e);
+  }
+
+  // Send welcome email with QR, PIN, portal invitation, and WiFi voucher
   if (email) {
-    sendQREmail(email, name, initial_balance, balance_type, qr_code, pin).catch(console.error);
+    sendQREmail(email, name, initial_balance, balance_type, qr_code, pin, wifiVoucherCode).catch(console.error);
   }
 
   // Audit log

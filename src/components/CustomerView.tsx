@@ -6,6 +6,7 @@ import { useIsMobile } from '@/lib/useIsMobile';
 import { formatBalance, formatMoney, formatDate, isLowBalance, BANKS } from '@/lib/utils';
 import { ArrowLeft, Pencil, Mail, QrCode, Minus, Plus, TrendingUp, TrendingDown, CreditCard, ShoppingCart, Trash2, Package, Link2, ExternalLink, Send, Star, MapPin } from 'lucide-react';
 import { formatSeatLocation } from '@/data/stadium-seats';
+import { Wifi } from 'lucide-react';
 import Avatar from './Avatar';
 import StatusBadge from './StatusBadge';
 import EditCustomerModal from './EditCustomerModal';
@@ -47,6 +48,8 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
   const isMobile = useIsMobile();
   const isCajeraMode = isMobile && user?.role === 'cashier';
   const [confirmCobrar, setConfirmCobrar] = useState(false);
+  const [lastVoucher, setLastVoucher] = useState<string | null>(null);
+  const [sendingVoucher, setSendingVoucher] = useState(false);
 
   // All hooks must be called before any early returns (React rules of hooks)
   useEffect(() => {
@@ -86,6 +89,22 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
     };
     loadProducts();
   }, []);
+
+  useEffect(() => {
+    if (!c || !isOwner) return;
+    const fetchVoucher = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch(`/api/wifi/vouchers/customer?customer_id=${c.id}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const json = await res.json();
+      if (json.success && json.data) setLastVoucher(json.data.code);
+      else setLastVoucher(null);
+    };
+    fetchVoucher();
+  }, [c?.id, isOwner]);
 
   useEffect(() => {
     if (!c || !qrRef.current || typeof window === 'undefined') return;
@@ -416,6 +435,49 @@ export default function CustomerView({ onRecharge, onConsume, onLoadTransactions
             }} className="btn-outline mt-2 text-[10px] px-3 py-2 flex items-center gap-1.5 mx-auto">
               <CreditCard size={12}/> Imprimir Carnet
             </button>
+
+            {/* WiFi Voucher button (owner only) */}
+            {isOwner && (
+              <div className="mt-4 pt-3 border-t border-white/[0.03]">
+                <button
+                  disabled={sendingVoucher}
+                  onClick={async () => {
+                    setSendingVoucher(true);
+                    const supabase = (await import('@/lib/supabase-browser')).createClient();
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) { setSendingVoucher(false); return; }
+                    const res = await fetch('/api/wifi/vouchers/assign', {
+                      method: 'POST',
+                      headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ customer_id: c.id, send_email: true }),
+                    });
+                    const json = await res.json();
+                    if (json.success) {
+                      setLastVoucher(json.data.voucher.code);
+                      showToast(`📶 Voucher WiFi enviado a ${c.email}`);
+                    } else if (json.error === 'no_vouchers') {
+                      showToast('No hay vouchers disponibles. Carga más desde Ruijie Cloud.', 'warn');
+                    } else {
+                      showToast(json.error || json.message || 'Error al asignar voucher', 'error');
+                    }
+                    setSendingVoucher(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all text-[11px] font-semibold disabled:opacity-50"
+                >
+                  {sendingVoucher ? (
+                    <span className="w-4 h-4 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
+                  ) : (
+                    <Wifi size={14} />
+                  )}
+                  Enviar Voucher WiFi
+                </button>
+                {lastVoucher && (
+                  <div className="text-[10px] text-slate-500 text-center mt-1.5">
+                    Voucher actual: <span className="font-mono text-slate-400">{lastVoucher}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* VIP toggle (owner only) */}
             {isOwner && (

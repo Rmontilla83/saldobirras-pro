@@ -17,6 +17,7 @@ import OrdersView from '@/components/OrdersView';
 import UsersView from '@/components/UsersView';
 import ProductsView from '@/components/ProductsView';
 import ChangelogView from '@/components/ChangelogView';
+import WifiVouchersView from '@/components/WifiVouchersView';
 import Toast from '@/components/Toast';
 
 function IOSInstallBanner() {
@@ -152,6 +153,27 @@ export default function DashboardPage() {
     }, 20000 + Math.floor(Math.random() * 3000));
     pollOrders(); // Initial
     return () => clearInterval(iv);
+  }, []);
+
+  // WiFi voucher alert polling (owner only, every 5 minutes)
+  useEffect(() => {
+    const checkVouchers = async () => {
+      const currentUser = useStore.getState().user;
+      if (currentUser?.role !== 'owner') return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      try {
+        const res = await fetch('/api/wifi/vouchers', { headers: { Authorization: `Bearer ${session.access_token}` } });
+        const json = await res.json();
+        if (json.success) {
+          useStore.getState().setLowVouchers(json.data.alert);
+        }
+      } catch {}
+    };
+    const iv = setInterval(checkVouchers, 300000); // 5 min
+    // Initial check after 5 seconds (let auth settle)
+    const timeout = setTimeout(checkVouchers, 5000);
+    return () => { clearInterval(iv); clearTimeout(timeout); };
   }, []);
 
   const apiCall = async (url: string, method: string = 'GET', body?: any) => {
@@ -393,6 +415,9 @@ export default function DashboardPage() {
         )}
         {store.view === 'changelog' && store.user?.role === 'owner' && (
           <ChangelogView />
+        )}
+        {store.view === 'wifi-vouchers' && store.user?.role === 'owner' && (
+          <WifiVouchersView showToast={showToast} />
         )}
       </div>
 
